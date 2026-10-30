@@ -4,51 +4,75 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SolaCon 2 - Product | Sola Payments</title>
-  <meta name="description" content="SolaCon 2 product information from Sola Payments.">
+  <meta name="description" content="Explore Sola's products at SolaCon 2: Sola Terminal, Sola Checkout, Sola Collect, Surcharging, Chargeback Management, and what's next.">
   <meta name="theme-color" content="#010623">
-  <link rel="icon" href="assets/sola-logo-reverse.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <script src="/assets/site.js"></script>
   <style>
-    :root {
-      --sola-blue: #0047ff;
-      --sola-navy: #010623;
-    }
+    .hero h1 { font-size: clamp(3rem, 7vw, 6rem); }
 
-    * { box-sizing: border-box; margin: 0; }
-
-    body {
-      min-height: 100vh;
-      min-height: 100dvh;
+    .tile {
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2rem;
-      padding: 2rem 1.5rem;
-      background: var(--sola-navy);
-      color: #fff;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      text-align: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      transition: border-color 0.15s, transform 0.15s;
     }
 
-    .logo {
-      width: min(60vw, 240px);
-      height: auto;
-    }
+    .tile:hover { border-color: var(--sola-blue-light); transform: translateY(-2px); }
 
-    h1 {
-      font-size: clamp(2rem, 8vw, 3.5rem);
-      font-weight: 700;
-      line-height: 1.1;
-    }
+    .tile h2 { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; margin: 0; }
 
-    h1 span {
-      display: block;
-      color: var(--sola-blue);
-    }
+    .tile .more { margin-top: auto; padding-top: 0.5rem; color: var(--sola-blue-light); font-weight: 700; }
   </style>
 </head>
 <body>
-  <img class="logo" src="assets/sola-logo-reverse.svg" alt="Sola Payments">
-  <h1>SolaCon 2 <span>Product</span></h1>
+  <header class="site-header">
+    <a href="/"><img src="/assets/sola-logo-reverse.svg" alt="Sola Payments"></a>
+  </header>
+
+  <main class="slide">
+    <div class="hero">
+      <p class="eyebrow">Product Team Booth</p>
+      <h1>SolaCon 2 <em>Product</em></h1>
+      <p class="lede">See what we've built for your merchants, and help us decide what we build next.</p>
+    </div>
+
+    <nav class="grid grid--3" aria-label="Products">
+      <a class="card tile" href="/terminal/">
+        <h2>Sola Terminal</h2>
+        <p>Integrated payments on PAX devices through one cloud API.</p>
+        <span class="more">Explore &rarr;</span>
+      </a>
+      <a class="card tile" href="/checkout/">
+        <h2>Sola Checkout</h2>
+        <p>Hosted payment pages with ready-to-use templates.</p>
+        <span class="more">Explore &rarr;</span>
+      </a>
+      <a class="card tile" href="/collect/">
+        <h2>Sola Collect <span class="badge">Coming soon</span></h2>
+        <p>Simple invoicing built on Payment Links.</p>
+        <span class="more">Explore &rarr;</span>
+      </a>
+      <a class="card tile" href="/surcharging/">
+        <h2>Surcharging <span class="badge">New</span></h2>
+        <p>Compliant surcharging on Sola Terminal and by API.</p>
+        <span class="more">Explore &rarr;</span>
+      </a>
+      <a class="card tile" href="/chargebacks/">
+        <h2>Chargeback Management</h2>
+        <p>Get alerted, respond, and upload evidence in one portal.</p>
+        <span class="more">Explore &rarr;</span>
+      </a>
+      <a class="card tile" href="/whats-next/">
+        <h2>What's next? <span class="badge badge--outline">Your vote</span></h2>
+        <p>Ideas we're exploring. Tell us what your merchants need.</p>
+        <span class="more">Weigh in &rarr;</span>
+      </a>
+    </nav>
+  </main>
+
+  <nav class="page-nav" aria-label="Pages"></nav>
 </body>
 </html>

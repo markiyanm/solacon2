@@ -1,0 +1,227 @@
+:root {
+  --sola-blue: #0047ff;
+  --sola-blue-light: #7c9dff;
+  --sola-navy: #010623;
+  --surface: #0a1238;
+  --line: rgba(255, 255, 255, 0.12);
+  --text-muted: rgba(255, 255, 255, 0.74);
+  --gutter: clamp(1.25rem, 4vw, 4rem);
+
+  /* Everything is sized in rem, so pages scale up on booth monitors. */
+  font-size: clamp(16px, 1.1vw, 30px);
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background:
+    radial-gradient(60rem 40rem at 100% 0%, rgba(0, 71, 255, 0.28), transparent 60%),
+    var(--sola-navy);
+  color: #fff;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.45;
+}
+
+a { color: inherit; }
+
+.site-header {
+  padding: 1.5rem var(--gutter) 0;
+}
+
+.site-header img {
+  display: block;
+  height: 2rem;
+  width: auto;
+}
+
+.slide {
+  width: 100%;
+  max-width: 96rem;
+  margin: 0 auto;
+  padding: 2rem var(--gutter);
+  display: grid;
+  align-content: center;
+  gap: 2rem;
+}
+
+.eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--sola-blue-light);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(2.25rem, 4.5vw, 3.75rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+h1 em {
+  font-style: normal;
+  color: var(--sola-blue-light);
+}
+
+.lede {
+  max-width: 44em;
+  margin-top: 1rem;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+
+/* Six cards read better as 3 + 3 than 4 + 2. */
+@media (min-width: 900px) {
+  .grid--3 { grid-template-columns: repeat(3, 1fr); }
+}
+
+.card {
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+}
+
+.card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.card h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.25rem;
+}
+
+.card p {
+  color: var(--text-muted);
+}
+
+.checks {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.checks li {
+  position: relative;
+  padding-left: 1.5rem;
+  color: var(--text-muted);
+}
+
+.checks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.45em;
+  width: 0.7em;
+  height: 0.4em;
+  border-left: 3px solid var(--sola-blue-light);
+  border-bottom: 3px solid var(--sola-blue-light);
+  transform: rotate(-45deg);
+}
+
+.checks strong {
+  color: #fff;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2em 0.75em;
+  border-radius: 999px;
+  background: var(--sola-blue);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.badge--outline {
+  background: transparent;
+  border: 1px solid var(--sola-blue-light);
+  color: var(--sola-blue-light);
+}
+
+.note {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.button {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.6em 1.2em;
+  border-radius: 0.5rem;
+  background: var(--sola-blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* Screenshot slot; swap the inner text for an <img> once screenshots exist. */
+.shot {
+  display: grid;
+  place-items: center;
+  height: clamp(10rem, 28vh, 24rem);
+  margin-top: 1rem;
+  border: 1px dashed var(--line);
+  border-radius: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  overflow: hidden;
+}
+
+.shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Draft content that still needs product confirmation. Remove the class once confirmed. */
+.tbd {
+  outline: 2px dashed #ffb020;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.page-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem var(--gutter) 2rem;
+  font-weight: 600;
+}
+
+.page-nav a {
+  color: var(--sola-blue-light);
+  text-decoration: none;
+}
+
+/* Inside the /present carousel: fill the screen, no page navigation. */
+.present body {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.present .page-nav {
+  display: none;
+}
+
+.present .slide {
+  padding-bottom: 4rem;
+}
