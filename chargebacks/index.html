@@ -475,7 +475,8 @@
     const demo = document.querySelector('.letter-demo');
     const evidence = demo.querySelector('.evidence');
     const points = demo.querySelector('.paper-points');
-    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // The booth monitor always plays; visitors who prefer reduced motion see a still letter.
+    const calm = !SOLA_PRESENTING && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const have = new Set();
 
     evidence.innerHTML = EVIDENCE
