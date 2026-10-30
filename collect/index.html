@@ -9,6 +9,70 @@
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
+  <style>
+    .collect-demo {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    @media (max-width: 900px) {
+      .collect-demo { grid-template-columns: 1fr; }
+    }
+
+    .collect-demo .browser { margin: 0; }
+
+    @media (min-width: 701px) {
+      .collect-demo .browser-view { height: clamp(14rem, 44vh, 34rem); }
+    }
+
+    .features {
+      display: grid;
+      gap: 0.3rem;
+      padding: 0;
+      list-style: none;
+    }
+
+    /* Each feature has a small Sola ring that fills in while its screen is showing. */
+    .feature {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 0.85rem;
+      width: 100%;
+      padding: 0.65rem 1rem;
+      border: 1px solid transparent;
+      border-radius: 0.9rem;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.4s, border-color 0.4s;
+    }
+
+    .feature::before {
+      content: "";
+      grid-row: span 2;
+      width: 0.9rem;
+      aspect-ratio: 1;
+      margin-top: 0.3rem;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 0.16rem var(--sola-blue);
+      transition: box-shadow 0.4s var(--ease-out);
+    }
+
+    .feature strong { font-size: 1.05rem; font-weight: 600; }
+
+    .feature span { color: var(--text-muted); font-size: 0.9rem; }
+
+    .feature.active {
+      background: var(--panel);
+      border-color: rgba(124, 157, 255, 0.3);
+    }
+
+    .feature.active::before { box-shadow: inset 0 0 0 0.45rem var(--sola-blue); }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -22,31 +86,25 @@
       <p class="lede">Sola Collect builds on Payment Links. Merchants create invoices from their product catalog, email a payment link, and track every invoice until it's paid.</p>
     </div>
 
-    <div class="grid stagger grid--3">
-      <section class="card">
-        <h2>Product catalog</h2>
-        <p>Save products and prices once, then reuse them on every invoice.</p>
-      </section>
-      <section class="card">
-        <h2>Invoices in a few clicks</h2>
-        <p>Pick items from the catalog and send a clean, simple invoice.</p>
-      </section>
-      <section class="card">
-        <h2>Email payment links</h2>
-        <p>Customers pay online from the link in their email.</p>
-      </section>
-      <section class="card">
-        <h2>Basic inventory</h2>
-        <p>Keep track of stock levels for the products you sell.</p>
-      </section>
-      <section class="card">
-        <h2>Collect payments</h2>
-        <p>Payments flow through Sola, just like the rest of the merchant's business.</p>
-      </section>
-      <section class="card">
-        <h2>Status at a glance</h2>
-        <p>See which invoices are sent, paid, or still open.</p>
-      </section>
+    <div class="collect-demo rotator stagger" data-interval="4500">
+      <figure class="browser">
+        <figcaption class="browser-bar"></figcaption>
+        <div class="browser-view">
+          <img src="/assets/screenshots/collect-catalog.webp" data-bar="Sola Collect: Catalog" alt="Sola Collect catalog with prices, margins, and stock">
+          <img src="/assets/screenshots/collect-builder.webp" data-bar="Sola Collect: Create invoice" alt="Creating an invoice from catalog items">
+          <img src="/assets/screenshots/collect-pay.webp" data-bar="What the customer sees: invoice payment page" alt="Customer's invoice payment page">
+          <img src="/assets/screenshots/collect-dashboard.webp" data-bar="Sola Collect: Dashboard" alt="Dashboard showing collected, outstanding, and invoice status">
+        </div>
+      </figure>
+
+      <ul class="features">
+        <li><button class="feature" type="button" data-shot="0"><strong>Product catalog</strong><span>Save products and prices once, then reuse them on every invoice.</span></button></li>
+        <li><button class="feature" type="button" data-shot="0"><strong>Basic inventory</strong><span>Keep track of stock levels for the products you sell.</span></button></li>
+        <li><button class="feature" type="button" data-shot="1"><strong>Invoices in a few clicks</strong><span>Pick items from the catalog and send a clean, simple invoice.</span></button></li>
+        <li><button class="feature" type="button" data-shot="2"><strong>Email payment links</strong><span>Customers pay online from the link in their email.</span></button></li>
+        <li><button class="feature" type="button" data-shot="2"><strong>Collect payments</strong><span>Payments flow through Sola, like the rest of the business.</span></button></li>
+        <li><button class="feature" type="button" data-shot="3"><strong>Status at a glance</strong><span>See which invoices are paid, open, or need follow-up.</span></button></li>
+      </ul>
     </div>
 
     <p class="note">Built to stand on its own: no accounting software to connect or set up.</p>

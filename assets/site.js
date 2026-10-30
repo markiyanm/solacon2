@@ -64,6 +64,47 @@ function solaSplitHeadline(h1) {
   }
 }
 
+// A .rotator cycles through the screenshots in its .browser on its own. Hovering or
+// focusing a [data-shot] control shows that screenshot; each image's data-bar fills the bar.
+function solaRotator(root) {
+  const shots = root.querySelectorAll('.browser-view img');
+  const bar = root.querySelector('.browser-bar');
+  const controls = root.querySelectorAll('[data-shot]');
+  const interval = Number(root.dataset.interval) || 4000;
+  const auto = shots.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let shown = 0;
+  let holding = false;
+  let timer;
+  let releaseTimer;
+
+  const show = i => {
+    shown = i;
+    shots.forEach((shot, j) => shot.classList.toggle('active', j === i));
+    controls.forEach(control => control.classList.toggle('active', Number(control.dataset.shot) === i));
+    if (bar && shots[i].dataset.bar) bar.textContent = shots[i].dataset.bar;
+    clearTimeout(timer);
+    if (auto) timer = setTimeout(() => show(holding ? shown : (shown + 1) % shots.length), interval);
+  };
+
+  controls.forEach(control => {
+    const hold = () => { holding = true; show(Number(control.dataset.shot)); };
+    const release = () => { holding = false; };
+    control.addEventListener('mouseenter', hold);
+    control.addEventListener('focus', hold);
+    control.addEventListener('mouseleave', release);
+    control.addEventListener('blur', release);
+    // Taps don't reliably hover or focus, so a tap holds the shot for a while.
+    control.addEventListener('click', () => {
+      hold();
+      clearTimeout(releaseTimer);
+      releaseTimer = setTimeout(release, 15000);
+    });
+  });
+
+  root.solaRestart = () => show(0);
+  show(0);
+}
+
 // Restart the entrance sequence (see "Entrance" in site.css).
 function solaEnter() {
   const root = document.documentElement;
@@ -99,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.stagger').forEach(group => {
     [...group.children].forEach((child, i) => child.style.setProperty('--i', i));
   });
+  document.querySelectorAll('.rotator').forEach(solaRotator);
   solaEnter();
 
   // Inside the carousel, links jump to that slide and keys control the deck.
@@ -115,8 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
       parent.postMessage({ type: 'key', key: e.key }, location.origin);
     });
+    // Each time the carousel shows this slide, replay it from the start.
     window.addEventListener('message', e => {
-      if (e.origin === location.origin && e.data.type === 'enter') solaEnter();
+      if (e.origin !== location.origin || e.data.type !== 'enter') return;
+      solaEnter();
+      document.querySelectorAll('.rotator').forEach(rotator => rotator.solaRestart());
     });
   }
 });

@@ -321,7 +321,7 @@ h1 {
   object-fit: contain;
 }
 
-/* A screenshot in a plain browser window; the bar shows the page's real URL. */
+/* A screenshot in a plain browser window; the bar shows the page URL or screen name. */
 .browser {
   margin: 1rem 0 0;
   overflow: hidden;
@@ -358,6 +358,11 @@ h1 {
 
 .browser-view img.active {
   opacity: 1;
+}
+
+/* On phones, show the whole screenshot instead of a tall crop. */
+@media (max-width: 700px) {
+  .browser-view { height: auto; aspect-ratio: 16 / 10; }
 }
 
 .page-nav {
