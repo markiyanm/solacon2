@@ -64,45 +64,95 @@ function solaSplitHeadline(h1) {
   }
 }
 
-// A .rotator cycles through the screenshots in its .browser on its own. Hovering or
-// focusing a [data-shot] control shows that screenshot; each image's data-bar fills the bar.
+// A .rotator cycles through the screenshots in its .browser until someone picks one.
+// [data-shot] controls work like radio buttons: clicking one selects its screenshot and
+// stops the cycle; hovering one only pauses it. Each image's data-bar fills the bar, and
+// its data-href becomes the target of the rotator's [data-demo-link].
 function solaRotator(root) {
   const shots = root.querySelectorAll('.browser-view img');
   const bar = root.querySelector('.browser-bar');
+  const demoLink = root.querySelector('[data-demo-link]');
   const controls = root.querySelectorAll('[data-shot]');
   const interval = Number(root.dataset.interval) || 4000;
   const auto = shots.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches;
   let shown = 0;
   let holding = false;
+  let picked = false;
   let timer;
-  let releaseTimer;
 
   const show = i => {
     shown = i;
     shots.forEach((shot, j) => shot.classList.toggle('active', j === i));
-    controls.forEach(control => control.classList.toggle('active', Number(control.dataset.shot) === i));
+    controls.forEach(control => {
+      const selected = Number(control.dataset.shot) === i;
+      control.classList.toggle('active', selected);
+      if (control.getAttribute('role') === 'tab') control.setAttribute('aria-selected', selected);
+    });
     if (bar && shots[i].dataset.bar) bar.textContent = shots[i].dataset.bar;
+    if (demoLink && shots[i].dataset.href) demoLink.href = shots[i].dataset.href;
     clearTimeout(timer);
-    if (auto) timer = setTimeout(() => show(holding ? shown : (shown + 1) % shots.length), interval);
+    if (auto && !picked) timer = setTimeout(() => show(holding ? shown : (shown + 1) % shots.length), interval);
   };
 
   controls.forEach(control => {
-    const hold = () => { holding = true; show(Number(control.dataset.shot)); };
-    const release = () => { holding = false; };
-    control.addEventListener('mouseenter', hold);
-    control.addEventListener('focus', hold);
-    control.addEventListener('mouseleave', release);
-    control.addEventListener('blur', release);
-    // Taps don't reliably hover or focus, so a tap holds the shot for a while.
+    control.addEventListener('mouseenter', () => { holding = true; });
+    control.addEventListener('mouseleave', () => { holding = false; });
     control.addEventListener('click', () => {
-      hold();
-      clearTimeout(releaseTimer);
-      releaseTimer = setTimeout(release, 15000);
+      picked = true;
+      show(Number(control.dataset.shot));
     });
   });
 
-  root.solaRestart = () => show(0);
+  root.solaRestart = () => { picked = false; show(0); };
+  root.solaHold = value => { holding = value; };
   show(0);
+}
+
+// Clicking a .browser opens its screenshots full size, starting with the one showing.
+function solaLightbox(browser) {
+  let box = document.querySelector('.lightbox');
+  if (!box) {
+    box = document.createElement('dialog');
+    box.className = 'lightbox';
+    box.innerHTML = `
+      <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
+      <button class="lightbox-step" type="button" data-step="-1" aria-label="Previous screenshot">&lsaquo;</button>
+      <figure><img alt=""><figcaption></figcaption></figure>
+      <button class="lightbox-step" type="button" data-step="1" aria-label="Next screenshot">&rsaquo;</button>`;
+    document.body.append(box);
+    box.querySelector('.lightbox-close').addEventListener('click', () => box.close());
+    box.addEventListener('click', e => {
+      const step = e.target.closest('[data-step]');
+      if (step) box.solaStep(Number(step.dataset.step));
+      else if (e.target === box || e.target.tagName === 'FIGURE') box.close();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.stopPropagation();
+        box.solaStep(e.key === 'ArrowRight' ? 1 : -1);
+      }
+    });
+    box.addEventListener('close', () => box.solaRotator?.solaHold(false));
+  }
+
+  const shots = [...browser.querySelectorAll('.browser-view img')];
+  const bar = browser.querySelector('.browser-bar').textContent;
+  let index = Math.max(0, shots.findIndex(shot => shot.classList.contains('active')));
+  const show = () => {
+    const shot = shots[index];
+    box.querySelector('img').src = shot.src;
+    box.querySelector('img').alt = shot.alt;
+    box.querySelector('figcaption').textContent = shot.dataset.bar || bar;
+  };
+  box.solaStep = step => {
+    index = (index + step + shots.length) % shots.length;
+    show();
+  };
+  box.classList.toggle('single', shots.length < 2);
+  box.solaRotator = browser.closest('.rotator');
+  box.solaRotator?.solaHold(true);
+  show();
+  box.showModal();
 }
 
 // Restart the entrance sequence (see "Entrance" in site.css).
@@ -141,6 +191,22 @@ document.addEventListener('DOMContentLoaded', () => {
     [...group.children].forEach((child, i) => child.style.setProperty('--i', i));
   });
   document.querySelectorAll('.rotator').forEach(solaRotator);
+  // The screenshot (and its bar) opens the viewer; the tabs only switch screenshots.
+  document.querySelectorAll('.browser').forEach(browser => {
+    const view = browser.querySelector('.browser-view');
+    view.tabIndex = 0;
+    view.setAttribute('role', 'button');
+    view.setAttribute('aria-label', 'View full screenshot');
+    browser.addEventListener('click', e => {
+      if (!e.target.closest('.browser-tabs')) solaLightbox(browser);
+    });
+    view.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        solaLightbox(browser);
+      }
+    });
+  });
   solaEnter();
 
   // Inside the carousel, links jump to that slide and keys control the deck.
@@ -160,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Each time the carousel shows this slide, replay it from the start.
     window.addEventListener('message', e => {
       if (e.origin !== location.origin || e.data.type !== 'enter') return;
+      document.querySelector('.lightbox')?.close();
       solaEnter();
       document.querySelectorAll('.rotator').forEach(rotator => rotator.solaRestart());
     });

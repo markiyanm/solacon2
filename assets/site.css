@@ -328,10 +328,67 @@ h1 {
   border-radius: 0.9rem;
   background: #fff;
   box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  cursor: zoom-in;
+  transition: box-shadow 0.3s, translate 0.3s var(--ease-out);
+}
+
+.browser:hover {
+  translate: 0 -3px;
+  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5), 0 0 0 2px var(--signal);
+}
+
+/* Optional tabs above the bar, styled like browser tabs; the selected one joins the bar. */
+.browser-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem 0.5rem 0;
+  overflow-x: auto;
+  background: #cfd5e6;
+  cursor: default;
+  scrollbar-width: none;
+}
+
+.browser-tabs > * {
+  flex: none;
+  padding: 0.4rem 1rem;
+  border: 0;
+  border-radius: 0.55rem 0.55rem 0 0;
+  background: transparent;
+  color: #4a5275;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: background-color 0.25s, color 0.25s;
+}
+
+.browser-tabs button { cursor: pointer; }
+
+.browser-tabs button:hover { background: rgba(232, 235, 245, 0.55); }
+
+.browser-tabs .active {
+  background: #e8ebf5;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* On phones, tabs share the width so they all stay visible. */
+@media (max-width: 700px) {
+  .browser-tabs > * {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0.4rem 0.4rem;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .browser-tabs > :only-child { flex: none; padding: 0.4rem 1rem; }
 }
 
 .browser-bar {
-  padding: 0.4rem 1rem;
+  position: relative;
+  padding: 0.4rem 2.5rem 0.4rem 1rem;
   overflow: hidden;
   background: #e8ebf5;
   color: #4a5275;
@@ -340,10 +397,26 @@ h1 {
   white-space: nowrap;
 }
 
+/* Expand icon: the screenshot opens full size. */
+.browser-bar::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0.85rem;
+  width: 0.95rem;
+  aspect-ratio: 1;
+  translate: 0 -50%;
+  background: #4a5275;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 .browser-view {
   position: relative;
   height: clamp(9rem, 26vh, 22rem);
 }
+
+.browser-view:focus-visible { outline-offset: -4px; }
 
 .browser-view img {
   position: absolute;
@@ -363,6 +436,85 @@ h1 {
 /* On phones, show the whole screenshot instead of a tall crop. */
 @media (max-width: 700px) {
   .browser-view { height: auto; aspect-ratio: 16 / 10; }
+}
+
+/* Full-size screenshot viewer (built by site.js). */
+.lightbox {
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.lightbox::backdrop {
+  background: rgba(1, 6, 35, 0.88);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.lightbox[open] { animation: fade 0.3s; }
+
+.lightbox figure {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.9rem;
+  height: 100%;
+  padding: 3.5rem 5rem;
+}
+
+.lightbox img {
+  max-width: 100%;
+  max-height: calc(100vh - 9rem);
+  border-radius: 0.75rem;
+  box-shadow: 0 2rem 4rem rgba(0, 0, 0, 0.6);
+  animation: fade-up 0.45s var(--ease-out);
+}
+
+.lightbox figcaption {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.lightbox-close,
+.lightbox-step {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(244, 246, 255, 0.12);
+  color: var(--text);
+  font: inherit;
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-close:hover,
+.lightbox-step:hover { background: rgba(244, 246, 255, 0.22); }
+
+.lightbox-close { top: 1rem; right: 1rem; }
+
+.lightbox-step { top: 50%; translate: 0 -50%; }
+
+.lightbox-step[data-step="-1"] { left: 1rem; }
+
+.lightbox-step[data-step="1"] { right: 1rem; }
+
+.lightbox.single .lightbox-step { display: none; }
+
+@media (max-width: 700px) {
+  .lightbox figure { padding: 4rem 0.75rem; }
+  .lightbox-step { top: auto; bottom: 1rem; translate: none; }
 }
 
 .page-nav {

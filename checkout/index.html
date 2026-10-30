@@ -10,31 +10,30 @@
   <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
   <style>
-    .demo-label {
-      margin-top: 1rem;
-      font-size: 0.85rem;
-    }
-
-    .demos {
+    /* Both cards end with the same live-demo button, pinned to the bottom so they line up. */
+    .demo-card {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 0.5rem;
+      flex-direction: column;
     }
 
-    .demos a {
-      padding: 0.45em 1.1em;
-      border-radius: 999px;
-      box-shadow: inset 0 0 0 1.5px var(--line);
-      font-size: 0.9rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background-color 0.3s, box-shadow 0.3s;
+    .demo-card .browser { margin-bottom: 1.25rem; }
+
+    .demo-card .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+      align-self: flex-start;
+      margin-top: auto;
     }
 
-    .demos a.active {
-      background: var(--sola-blue);
-      box-shadow: inset 0 0 0 1.5px var(--sola-blue);
+    /* Opens in a new tab. */
+    .demo-card .button::after {
+      content: "";
+      width: 0.8em;
+      aspect-ratio: 1;
+      background: currentColor;
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7M8 7h9v9'/%3E%3C/svg%3E") center / contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7M8 7h9v9'/%3E%3C/svg%3E") center / contain no-repeat;
     }
   </style>
 </head>
@@ -51,10 +50,13 @@
     </div>
 
     <div class="grid stagger">
-      <section class="card">
+      <section class="card demo-card">
         <h2>Donations <span class="badge">Available now</span></h2>
         <p>For nonprofits, churches, and causes. Donors pick a gift level, give monthly or in installments, choose where their gift goes, and can cover the fee.</p>
         <figure class="browser">
+          <div class="browser-tabs" role="tablist" aria-label="Donation demos">
+            <span class="active" role="tab" aria-selected="true">Youth arts fund</span>
+          </div>
           <figcaption class="browser-bar">devcheckout.solapayments.com/riversideyouthfund</figcaption>
           <div class="browser-view">
             <img class="active" src="/assets/screenshots/checkout-donations-riverside.webp" alt="Riverside Youth Arts Fund donation page">
@@ -63,23 +65,23 @@
         <a class="button" href="https://devcheckout.solapayments.com/riversideyouthfund" target="_blank" rel="noopener">Try the live demo</a>
       </section>
 
-      <section class="card rotator">
+      <section class="card demo-card rotator">
         <h2>Intake <span class="badge badge--outline">Preview</span></h2>
         <p>For senior living, memory care, and recovery centers. Residents and families pay deposits, monthly fees, and balances against the resident's account.</p>
         <figure class="browser">
+          <div class="browser-tabs" role="tablist" aria-label="Intake demos">
+            <button type="button" role="tab" data-shot="0">Senior living</button>
+            <button type="button" role="tab" data-shot="1">Recovery</button>
+            <button type="button" role="tab" data-shot="2">Memory care</button>
+          </div>
           <figcaption class="browser-bar"></figcaption>
           <div class="browser-view">
-            <img src="/assets/screenshots/checkout-intake-fernhollow.webp" data-bar="devcheckout.solapayments.com/fernhollow-senior-living" alt="Fernhollow Senior Living payment page">
-            <img src="/assets/screenshots/checkout-intake-brightmere.webp" data-bar="devcheckout.solapayments.com/brightmere-recovery" alt="Brightmere Recovery payment page">
-            <img src="/assets/screenshots/checkout-intake-lanternbrook.webp" data-bar="devcheckout.solapayments.com/lanternbrook-memory-care" alt="Lanternbrook Memory Care payment page">
+            <img src="/assets/screenshots/checkout-intake-fernhollow.webp" data-bar="devcheckout.solapayments.com/fernhollow-senior-living" data-href="https://devcheckout.solapayments.com/fernhollow-senior-living" alt="Fernhollow Senior Living payment page">
+            <img src="/assets/screenshots/checkout-intake-brightmere.webp" data-bar="devcheckout.solapayments.com/brightmere-recovery" data-href="https://devcheckout.solapayments.com/brightmere-recovery" alt="Brightmere Recovery payment page">
+            <img src="/assets/screenshots/checkout-intake-lanternbrook.webp" data-bar="devcheckout.solapayments.com/lanternbrook-memory-care" data-href="https://devcheckout.solapayments.com/lanternbrook-memory-care" alt="Lanternbrook Memory Care payment page">
           </div>
         </figure>
-        <p class="demo-label">Try a live demo</p>
-        <div class="demos">
-          <a href="https://devcheckout.solapayments.com/fernhollow-senior-living" data-shot="0" target="_blank" rel="noopener">Senior living</a>
-          <a href="https://devcheckout.solapayments.com/brightmere-recovery" data-shot="1" target="_blank" rel="noopener">Recovery</a>
-          <a href="https://devcheckout.solapayments.com/lanternbrook-memory-care" data-shot="2" target="_blank" rel="noopener">Memory care</a>
-        </div>
+        <a class="button" href="https://devcheckout.solapayments.com/fernhollow-senior-living" data-demo-link target="_blank" rel="noopener">Try the live demo</a>
       </section>
     </div>
   </main>
