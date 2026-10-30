@@ -4,11 +4,350 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Surcharging | SolaCon 2</title>
-  <meta name="description" content="Compliant surcharging on Sola Terminal and through the Sola Surcharging API.">
+  <meta name="description" content="Compliant surcharging on Sola Terminal and through the Sola API, card present and card not present.">
   <meta name="theme-color" content="#010623">
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
+  <style>
+    :root {
+      /* "Not permitted" only: the one warm color on the page. */
+      --stop: #ff8f80;
+      --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+      --icon-cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");
+    }
+
+    .top {
+      display: grid;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    @media (min-width: 1000px) {
+      .top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); }
+    }
+
+    /* What it's worth: monthly credit card sales at a 3% surcharge. */
+    .worth {
+      display: grid;
+      gap: 0.4rem;
+      max-width: 34rem;
+      margin-top: 1.75rem;
+    }
+
+    .worth h2 { margin: 0; }
+
+    .worth-figure {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 0.6rem;
+      color: var(--text-muted);
+    }
+
+    .worth-figure output {
+      color: var(--text);
+      font-size: 2.4rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .worth label {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: 0.4rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .worth label output { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    /* The slider's thumb is a Sola ring. */
+    .worth input {
+      --fill: 14%;
+      width: 100%;
+      height: 0.4rem;
+      margin: 0.6rem 0;
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--sola-blue) var(--fill), rgba(124, 157, 255, 0.2) var(--fill));
+      cursor: pointer;
+    }
+
+    .worth input::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 1.4rem;
+      height: 1.4rem;
+      border: 0.32rem solid var(--sola-blue);
+      border-radius: 50%;
+      background: var(--ink);
+    }
+
+    .worth input::-moz-range-thumb {
+      width: 1.4rem;
+      height: 1.4rem;
+      box-sizing: border-box;
+      border: 0.32rem solid var(--sola-blue);
+      border-radius: 50%;
+      background: var(--ink);
+    }
+
+    .worth .note strong { color: var(--text); font-weight: 600; }
+
+    /* The ruling card: pick a card, a channel and a state, and see what happens to the fee. */
+    .ruling {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .ruling-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.25rem 1rem;
+    }
+
+    .ruling h2 { margin: 0; }
+
+    .ruling .tap-hint { font-size: 0.85rem; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 1.25rem;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .chips button {
+      padding: 0.4em 1em;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .chips button:hover { background: rgba(124, 157, 255, 0.12); }
+
+    .chips button[aria-pressed="true"] {
+      background: var(--sola-blue);
+      box-shadow: inset 0 0 0 1.5px var(--sola-blue);
+    }
+
+    .ruling-body {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+    }
+
+    .decides {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .decides strong { color: var(--text); font-weight: 600; }
+
+    .map {
+      flex: 0 1 17.5rem;
+      margin: 0;
+    }
+
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(11, 1fr);
+      gap: 0.2rem;
+    }
+
+    .state {
+      position: relative;
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1;
+      padding: 0;
+      border: 0;
+      border-radius: 0.3rem;
+      color: var(--text);
+      font: inherit;
+      font-size: 0.55rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.25s, box-shadow 0.25s, scale 0.3s var(--ease-out);
+    }
+
+    .state:hover { scale: 1.12; z-index: 1; }
+
+    /* Tile and legend colors: up to 3%, capped lower, not permitted. */
+    .is-ok { background: rgba(0, 71, 255, 0.34); }
+
+    .is-cap { background: rgba(124, 157, 255, 0.1); box-shadow: inset 0 0 0 1.5px var(--signal); }
+
+    .is-no {
+      background: repeating-linear-gradient(135deg, rgba(255, 143, 128, 0.32) 0 1.5px, transparent 1.5px 5px);
+      box-shadow: inset 0 0 0 1px rgba(255, 143, 128, 0.4);
+      color: var(--stop);
+    }
+
+    .state[aria-pressed="true"] {
+      z-index: 2;
+      background: var(--sola-blue);
+      box-shadow: 0 0 0 2px #fff;
+      color: #fff;
+      scale: 1.2;
+    }
+
+    .state.is-no[aria-pressed="true"] { background: var(--stop); color: var(--ink); }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem 0.8rem;
+      margin-top: 0.75rem;
+      padding: 0;
+      list-style: none;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .legend li { display: flex; align-items: center; gap: 0.35rem; }
+
+    .legend i { width: 0.8rem; aspect-ratio: 1; border-radius: 0.2rem; }
+
+    .verdict {
+      flex: 1 1 13rem;
+      display: grid;
+      align-content: start;
+      gap: 0.9rem;
+      padding: 1.1rem 1.25rem;
+      border-radius: 1rem;
+      background: rgba(1, 6, 35, 0.55);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+
+    .verdict-pill {
+      justify-self: start;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.3em 0.95em;
+      border-radius: 999px;
+      background: var(--sola-blue);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .verdict-pill::before {
+      content: "";
+      width: 0.85em;
+      aspect-ratio: 1;
+      background: currentColor;
+      -webkit-mask: var(--icon-check) center / contain no-repeat;
+      mask: var(--icon-check) center / contain no-repeat;
+    }
+
+    .denied .verdict-pill {
+      background: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--stop);
+      color: var(--stop);
+    }
+
+    .denied .verdict-pill::before {
+      -webkit-mask-image: var(--icon-cross);
+      mask-image: var(--icon-cross);
+    }
+
+    .stamp .verdict-pill { animation: stamp 0.5s var(--ease-out); }
+
+    @keyframes stamp {
+      from { opacity: 0; scale: 1.3; }
+    }
+
+    .receipt {
+      display: grid;
+      gap: 0.35rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .receipt div {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      color: var(--text-muted);
+    }
+
+    .receipt dd { margin: 0; color: var(--text); }
+
+    .denied .receipt .fee dd { color: var(--stop); }
+
+    .receipt .total {
+      margin-top: 0.2rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed rgba(124, 157, 255, 0.35);
+      color: var(--text);
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .why {
+      min-height: 3em;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      text-wrap: pretty;
+    }
+
+    /* "Not permitted" swaps the check for a cross. */
+    .checks.crosses li::before {
+      top: 0.35em;
+      left: 0;
+      width: 0.85em;
+      height: 0.85em;
+      border: 0;
+      transform: none;
+      background: var(--stop);
+      -webkit-mask: var(--icon-cross) center / contain no-repeat;
+      mask: var(--icon-cross) center / contain no-repeat;
+    }
+
+    .rules .note { margin-top: 0.9rem; }
+
+    .rules .start {
+      padding-top: 0.9rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .rules .start strong { color: var(--text); font-weight: 600; }
+
+    .entered .ruling { animation: fade-up 0.8s var(--ease-out) 0.35s both; }
+
+    .entered .worth { animation: fade-up 0.8s var(--ease-out) 0.55s both; }
+
+    @media (max-width: 700px) {
+      .ruling { padding: 1.1rem; }
+      .map { flex-basis: 100%; }
+    }
+
+    /* On the booth screen: no slider to drag, a smaller map, and the top right corner left to the QR code. */
+    .present .worth { display: none; }
+
+    .present .ruling { gap: 0.8rem; margin-right: 5.5rem; }
+
+    .present .map { flex-basis: 16rem; }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -16,43 +355,272 @@
   </header>
 
   <main class="slide">
-    <div>
-      <p class="mark">Surcharging <span class="badge">New</span></p>
-      <h1>Surcharge with confidence.</h1>
-      <p class="lede">Surcharging rules change by card type, card brand, and state. Sola applies them on every transaction, so merchants surcharge compliantly without having to know the rules.</p>
+    <div class="top">
+      <div>
+        <p class="mark">Surcharging <span class="badge">New</span></p>
+        <h1>Pass on the fee. Not the risk.</h1>
+        <p class="lede">Merchants add a surcharge to credit card sales to cover the cost of accepting cards. Sola checks every sale against card brand rules, state rules, and the merchant's own rate before it adds a cent.</p>
+
+        <section class="card worth" aria-labelledby="worth-title">
+          <h2 id="worth-title">Show a merchant what it's worth</h2>
+          <p class="worth-figure"><output id="worth-month">$1,200</output> a month to offset processing</p>
+          <label for="worth-range">Credit card sales a month <output id="worth-sales">$40,000</output></label>
+          <input id="worth-range" type="range" min="5000" max="250000" step="5000" value="40000">
+          <p class="note">At a 3% surcharge, that's <strong id="worth-year">$14,400</strong> a year. Debit, prepaid, and gift card sales don't count.</p>
+        </section>
+      </div>
+
+      <section class="card ruling" aria-labelledby="ruling-title">
+        <div class="ruling-head">
+          <h2 id="ruling-title">Every sale gets a ruling</h2>
+          <p class="note tap-hint">Tap a card, a channel, and a state.</p>
+        </div>
+
+        <div class="controls">
+          <div class="chips" role="group" aria-label="Card">
+            <button type="button" data-card="credit">Credit</button>
+            <button type="button" data-card="debit">Debit</button>
+            <button type="button" data-card="prepaid">Prepaid</button>
+            <button type="button" data-card="gift">Gift</button>
+          </div>
+          <div class="chips" role="group" aria-label="Channel">
+            <button type="button" data-channel="present">Card present</button>
+            <button type="button" data-channel="notpresent">Card not present</button>
+          </div>
+        </div>
+
+        <p class="decides"></p>
+
+        <div class="ruling-body">
+          <figure class="map">
+            <div class="tiles" role="group" aria-label="State"></div>
+            <ul class="legend">
+              <li><i class="is-ok"></i>Up to 3%</li>
+              <li><i class="is-cap"></i>Up to 2%</li>
+              <li><i class="is-no"></i>Not permitted</li>
+            </ul>
+          </figure>
+
+          <div class="verdict">
+            <p class="verdict-pill"></p>
+            <dl class="receipt">
+              <div><dt>Sale</dt><dd>$100.00</dd></div>
+              <div class="fee"><dt></dt><dd></dd></div>
+              <div class="total"><dt>Total</dt><dd></dd></div>
+            </dl>
+            <p class="why"></p>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <div class="grid stagger">
+    <div class="grid stagger rules" style="--stagger-start: 0.7s;">
       <section class="card">
-        <h2>Debit and prepaid</h2>
-        <p>Detects cards that can't be surcharged and skips the fee automatically.</p>
+        <h2>Permitted</h2>
+        <ul class="checks">
+          <li><strong>Credit cards:</strong> Visa, Mastercard, Discover, Amex</li>
+          <li><strong>Up to 3%</strong>, or 2% in Colorado</li>
+          <li><strong>Never above</strong> the merchant's flat rate</li>
+          <li><strong>Card present</strong> on Sola Terminal or the Sola API</li>
+          <li><strong>Card not present</strong> through the Sola API</li>
+          <li><strong>Disclosed</strong> on screen and on the receipt</li>
+        </ul>
       </section>
-      <section class="card">
-        <h2>State rules</h2>
-        <p>Follows the rules where surcharging is restricted.</p>
-      </section>
-      <section class="card">
-        <h2>Rate caps</h2>
-        <p>Keeps every surcharge within card brand limits.</p>
-      </section>
-      <section class="card">
-        <h2>Clear disclosure</h2>
-        <p class="tbd">Shows the customer the surcharge before they pay and on the receipt.</p>
-      </section>
-    </div>
 
-    <div class="grid stagger" style="--stagger-start: 0.8s;">
       <section class="card">
-        <h2>On Sola Terminal</h2>
-        <p>Built into the Sola application. Turn it on and the terminal handles the rest.</p>
+        <h2>Not permitted</h2>
+        <ul class="checks crosses">
+          <li><strong>Debit cards</strong>, even when run as credit</li>
+          <li><strong>Prepaid and gift cards</strong></li>
+          <li><strong>Tax and tip:</strong> only the sale is surcharged</li>
+          <li><strong>Merchants in</strong> CA, CT, MA, ME, and Puerto Rico</li>
+          <li><strong>Card not present</strong> to cardholders billed there</li>
+        </ul>
+        <p class="note">Sola leaves the fee off, and the sale still goes through.</p>
       </section>
+
       <section class="card">
-        <h2>Surcharging API</h2>
-        <p>Partners can add the same compliant surcharging to their own solutions.</p>
+        <h2>Who qualifies</h2>
+        <ul class="checks">
+          <li><strong>Flat rate pricing</strong>, not pass-through or tiered</li>
+          <li><strong>Amex OptBlue</strong>, if they take Amex</li>
+          <li><strong>No convenience or service fee</strong> on the account</li>
+          <li class="tbd"><strong>A processor</strong> that supports surcharging</li>
+        </ul>
+        <p class="note start">New account? Turn on <strong>Enable Surcharge</strong> on the application in the Partner Portal.</p>
       </section>
     </div>
   </main>
 
   <nav class="page-nav" aria-label="Pages"></nav>
+
+  <script>
+    // Rules from Sola's fee rules service (product docs: Surcharge, "Limits").
+    // Card present follows the merchant's state; card not present follows the cardholder's billing state.
+    const BRAND_CAP = 3;
+    const STATE_CAPS = { CO: 2 };
+    const BLOCKED = ['CA', 'CT', 'MA', 'ME', 'PR'];
+    const MERCHANT_RATE = 3;
+    const SALE = 100;
+
+    const STATE_NAMES = {
+      AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado',
+      CT: 'Connecticut', DE: 'Delaware', DC: 'Washington, DC', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii',
+      ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
+      ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi',
+      MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
+      NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma',
+      OR: 'Oregon', PA: 'Pennsylvania', PR: 'Puerto Rico', RI: 'Rhode Island', SC: 'South Carolina',
+      SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
+      WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
+    };
+
+    // The tile map, row by row: two letters per tile, two dots for an empty spot.
+    const MAP = [
+      'AK..................ME',
+      '..........WI......VTNH',
+      'WAIDMTNDMNILMI..NYMA..',
+      'ORNVWYSDIAINOHPANJCTRI',
+      'CAUTCONEMOKYWVVAMDDE..',
+      '..AZNMKSARTNNCSCDC....',
+      '......OKLAMSALGA......',
+      'HI....TX......FL....PR',
+    ];
+
+    // Each reason fits two lines, so the card doesn't jump as the rulings change.
+    const CARD_WHY = {
+      debit: "Debit can't be surcharged, even when it's run as credit.",
+      prepaid: "Prepaid can't be surcharged. Sola spots it by the card's BIN.",
+      gift: 'Gift cards are never surcharged.',
+    };
+
+    // A rate means the fee is added; no rate means it's left off.
+    function rule({ card, channel, state }) {
+      const name = STATE_NAMES[state];
+      const cap = STATE_CAPS[state] || BRAND_CAP;
+      if (card !== 'credit') return { why: CARD_WHY[card] };
+      if (channel === 'present') {
+        if (BLOCKED.includes(state)) return { why: `${name} doesn't permit it. Merchants there can't enroll.` };
+        return { rate: cap, why: `Credit card. ${name} permits up to ${cap}%.` };
+      }
+      if (BLOCKED.includes(state)) return { why: `Billed in ${name}, which doesn't permit surcharging.` };
+      if (cap < MERCHANT_RATE) return { why: `${name} caps it at ${cap}%, and this merchant charges ${MERCHANT_RATE}%.` };
+      return { rate: MERCHANT_RATE, why: `Credit card. Billed in ${name}, which permits ${MERCHANT_RATE}%.` };
+    }
+
+    const ruling = document.querySelector('.ruling');
+    const decides = ruling.querySelector('.decides');
+    const verdict = ruling.querySelector('.verdict');
+    const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    MAP.forEach((row, r) => {
+      row.match(/../g).forEach((code, c) => {
+        if (code === '..') return;
+        const tile = document.createElement('button');
+        tile.type = 'button';
+        tile.className = 'state ' + (BLOCKED.includes(code) ? 'is-no' : STATE_CAPS[code] ? 'is-cap' : 'is-ok');
+        tile.dataset.state = code;
+        tile.textContent = code;
+        tile.title = STATE_NAMES[code];
+        tile.setAttribute('aria-label', STATE_NAMES[code]);
+        tile.style.gridArea = `${r + 1} / ${c + 1}`;
+        ruling.querySelector('.tiles').append(tile);
+      });
+    });
+
+    // Count the total up or down to its new value.
+    let shownTotal = SALE;
+    let countId = 0;
+    function countTo(el, to) {
+      const from = shownTotal;
+      const id = ++countId;
+      const start = performance.now();
+      shownTotal = to;
+      const step = now => {
+        if (id !== countId) return;
+        const t = calm ? 1 : Math.min(1, (now - start) / 450);
+        el.textContent = money.format(from + (to - from) * (1 - (1 - t) ** 3));
+        if (t < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    const picked = {};
+    function pick(next) {
+      Object.assign(picked, next);
+      ruling.querySelectorAll('button').forEach(button => {
+        const key = Object.keys(button.dataset)[0];
+        button.setAttribute('aria-pressed', picked[key] === button.dataset[key]);
+      });
+
+      decides.innerHTML = picked.channel === 'present'
+        ? "<strong>The merchant's state</strong> decides. On Sola Terminal or the Sola API."
+        : "<strong>The cardholder's billing state</strong> decides. Through the Sola API.";
+
+      const result = rule(picked);
+      const fee = result.rate ? SALE * result.rate / 100 : 0;
+      verdict.classList.toggle('denied', !result.rate);
+      verdict.querySelector('.verdict-pill').textContent = result.rate ? `Permitted · ${result.rate}%` : 'Not permitted';
+      verdict.querySelector('.fee dt').textContent = result.rate ? `Surcharge ${result.rate}%` : 'Surcharge';
+      verdict.querySelector('.fee dd').textContent = result.rate ? money.format(fee) : 'Not added';
+      verdict.querySelector('.why').textContent = result.why;
+      countTo(verdict.querySelector('.total dd'), SALE + fee);
+
+      verdict.classList.remove('stamp');
+      void verdict.offsetWidth;
+      verdict.classList.add('stamp');
+    }
+
+    // Until someone taps, the card plays through a few sales on its own, as it does on the booth screen.
+    const DEMO = [
+      { card: 'credit', channel: 'present', state: 'NY' },
+      { card: 'debit', channel: 'present', state: 'NY' },
+      { card: 'credit', channel: 'present', state: 'CO' },
+      { card: 'credit', channel: 'notpresent', state: 'CT' },
+      { card: 'prepaid', channel: 'notpresent', state: 'TX' },
+      { card: 'credit', channel: 'notpresent', state: 'FL' },
+    ];
+    let demoTimer;
+    function playDemo(i = 0) {
+      clearTimeout(demoTimer);
+      pick(DEMO[i]);
+      if (!calm) demoTimer = setTimeout(() => playDemo((i + 1) % DEMO.length), 3500);
+    }
+
+    function stopDemo() {
+      clearTimeout(demoTimer);
+      verdict.setAttribute('aria-live', 'polite');
+    }
+
+    ruling.addEventListener('focusin', stopDemo);
+    ruling.addEventListener('click', e => {
+      const button = e.target.closest('button');
+      if (!button) return;
+      stopDemo();
+      pick({ ...button.dataset });
+    });
+
+    // Each time the booth carousel shows this slide, start the sales over.
+    window.addEventListener('message', e => {
+      if (e.origin === location.origin && e.data.type === 'enter') playDemo();
+    });
+
+    playDemo();
+
+    const range = document.querySelector('#worth-range');
+    const dollars = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+    function updateWorth() {
+      const sales = Number(range.value);
+      const min = Number(range.min);
+      const max = Number(range.max);
+      document.querySelector('#worth-sales').textContent = dollars.format(sales);
+      document.querySelector('#worth-month').textContent = dollars.format(sales * BRAND_CAP / 100);
+      document.querySelector('#worth-year').textContent = dollars.format(sales * BRAND_CAP / 100 * 12);
+      range.style.setProperty('--fill', (sales - min) / (max - min) * 100 + '%');
+    }
+    range.addEventListener('input', updateWorth);
+    updateWorth();
+  </script>
 </body>
 </html>
