@@ -9,6 +9,34 @@
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
+  <style>
+    .demo-label {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+    }
+
+    .demos {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .demos a {
+      padding: 0.45em 1.1em;
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .demos a.active {
+      background: var(--sola-blue);
+      box-shadow: inset 0 0 0 1.5px var(--sola-blue);
+    }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -25,24 +53,67 @@
     <div class="grid stagger">
       <section class="card">
         <h2>Donations <span class="badge">Available now</span></h2>
-        <p>A giving page for nonprofits, churches, and causes.</p>
-        <!-- TODO: add assets/screenshots/checkout-donations.png and swap in an <img>. -->
-        <div class="shot">Donations screenshot</div>
-        <!-- TODO: link to the live donations demo. -->
-        <a class="button tbd" href="#">Try the live demo</a>
+        <p>For nonprofits, churches, and causes. Donors pick a gift level, give monthly or in installments, choose where their gift goes, and can cover the fee.</p>
+        <figure class="browser">
+          <figcaption class="browser-bar">devcheckout.solapayments.com/riversideyouthfund</figcaption>
+          <div class="browser-view">
+            <img class="active" src="/assets/screenshots/checkout-donations-riverside.webp" alt="Riverside Youth Arts Fund donation page">
+          </div>
+        </figure>
+        <a class="button" href="https://devcheckout.solapayments.com/riversideyouthfund" target="_blank" rel="noopener">Try the live demo</a>
       </section>
 
-      <section class="card">
+      <section class="card intake">
         <h2>Intake <span class="badge badge--outline">Preview</span></h2>
-        <p>Coming next: collect intake details and payment in one step for intake facilities.</p>
-        <!-- TODO: add assets/screenshots/checkout-intake.png and swap in an <img>. -->
-        <div class="shot">Intake screenshot</div>
-        <!-- TODO: link to the intake preview demo. -->
-        <a class="button tbd" href="#">See the preview</a>
+        <p>For senior living, memory care, and recovery centers. Residents and families pay deposits, monthly fees, and balances against the resident's account.</p>
+        <figure class="browser">
+          <figcaption class="browser-bar">devcheckout.solapayments.com/fernhollow-senior-living</figcaption>
+          <div class="browser-view">
+            <img class="active" src="/assets/screenshots/checkout-intake-fernhollow.webp" alt="Fernhollow Senior Living payment page">
+            <img src="/assets/screenshots/checkout-intake-brightmere.webp" alt="Brightmere Recovery payment page">
+            <img src="/assets/screenshots/checkout-intake-lanternbrook.webp" alt="Lanternbrook Memory Care payment page">
+          </div>
+        </figure>
+        <p class="demo-label">Try a live demo</p>
+        <div class="demos">
+          <a class="active" href="https://devcheckout.solapayments.com/fernhollow-senior-living" target="_blank" rel="noopener">Senior living</a>
+          <a href="https://devcheckout.solapayments.com/brightmere-recovery" target="_blank" rel="noopener">Recovery</a>
+          <a href="https://devcheckout.solapayments.com/lanternbrook-memory-care" target="_blank" rel="noopener">Memory care</a>
+        </div>
       </section>
     </div>
   </main>
 
   <nav class="page-nav" aria-label="Pages"></nav>
+
+  <script>
+    // Rotate through the intake demos; hovering or focusing a demo link shows it.
+    const intake = document.querySelector('.intake');
+    const shots = intake.querySelectorAll('.browser-view img');
+    const bar = intake.querySelector('.browser-bar');
+    const demoLinks = intake.querySelectorAll('.demos a');
+    let shown = 0;
+    let holding = false;
+
+    function showDemo(i) {
+      shown = i;
+      shots.forEach((shot, j) => shot.classList.toggle('active', j === i));
+      demoLinks.forEach((link, j) => link.classList.toggle('active', j === i));
+      const url = new URL(demoLinks[i].href);
+      bar.textContent = url.host + url.pathname;
+    }
+
+    demoLinks.forEach((link, i) => {
+      const hold = () => { holding = true; showDemo(i); };
+      link.addEventListener('mouseenter', hold);
+      link.addEventListener('focus', hold);
+      link.addEventListener('mouseleave', () => { holding = false; });
+      link.addEventListener('blur', () => { holding = false; });
+    });
+
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setInterval(() => { if (!holding) showDemo((shown + 1) % demoLinks.length); }, 4000);
+    }
+  </script>
 </body>
 </html>

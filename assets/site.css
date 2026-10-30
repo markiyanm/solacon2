@@ -189,6 +189,11 @@ h1 {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
 }
 
+/* Let cards shrink below long unbreakable content, like a URL. */
+.grid > * {
+  min-width: 0;
+}
+
 /* Six cards read better as 3 + 3 than 4 + 2. */
 @media (min-width: 900px) {
   .grid--3 { grid-template-columns: repeat(3, 1fr); }
@@ -314,6 +319,45 @@ h1 {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+/* A screenshot in a plain browser window; the bar shows the page's real URL. */
+.browser {
+  margin: 1rem 0 0;
+  overflow: hidden;
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.browser-bar {
+  padding: 0.4rem 1rem;
+  overflow: hidden;
+  background: #e8ebf5;
+  color: #4a5275;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-view {
+  position: relative;
+  height: clamp(9rem, 26vh, 22rem);
+}
+
+.browser-view img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  opacity: 0;
+  transition: opacity 0.8s var(--ease-in-out);
+}
+
+.browser-view img.active {
+  opacity: 1;
 }
 
 .page-nav {
