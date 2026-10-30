@@ -337,55 +337,6 @@ h1 {
   box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5), 0 0 0 2px var(--signal);
 }
 
-/* Optional tabs above the bar, styled like browser tabs; the selected one joins the bar. */
-.browser-tabs {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.4rem 0.5rem 0;
-  overflow-x: auto;
-  background: #cfd5e6;
-  cursor: default;
-  scrollbar-width: none;
-}
-
-.browser-tabs > * {
-  flex: none;
-  padding: 0.4rem 1rem;
-  border: 0;
-  border-radius: 0.55rem 0.55rem 0 0;
-  background: transparent;
-  color: #4a5275;
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 500;
-  transition: background-color 0.25s, color 0.25s;
-}
-
-.browser-tabs button { cursor: pointer; }
-
-.browser-tabs button:hover { background: rgba(232, 235, 245, 0.55); }
-
-.browser-tabs .active {
-  background: #e8ebf5;
-  color: var(--ink);
-  font-weight: 600;
-}
-
-/* On phones, tabs share the width so they all stay visible. */
-@media (max-width: 700px) {
-  .browser-tabs > * {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0.4rem 0.4rem;
-    overflow: hidden;
-    text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .browser-tabs > :only-child { flex: none; padding: 0.4rem 1rem; }
-}
-
 .browser-bar {
   position: relative;
   padding: 0.4rem 2.5rem 0.4rem 1rem;
@@ -577,8 +528,14 @@ h1 {
   from { opacity: 0; translate: 0 1rem; }
 }
 
+/*
+ * Respect reduced motion for visitors, but not on the booth monitor: /present (.booth)
+ * and its slides (.present) are a display, and PCs often have animations turned off.
+ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  :root:not(.present, .booth) *,
+  :root:not(.present, .booth) *::before,
+  :root:not(.present, .booth) *::after {
     animation: none !important;
     transition: none !important;
   }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="booth">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -194,11 +194,17 @@
     let current = -1;
     let elapsed = 0;
     let paused = false;
+    // Video slides advance when the video ends. If the video goes quiet (it can't
+    // play, say), the slide falls back to the timer so the deck never stalls.
+    let lastVideoSignal = 0;
+    const videoPlaying = () => SOLA_PAGES[current].video && Date.now() - lastVideoSignal < 5000;
 
     function show(i) {
       i = (i + frames.length) % frames.length;
       if (i !== current) {
+        if (current >= 0) frames[current].contentWindow.postMessage({ type: 'leave' }, location.origin);
         current = i;
+        lastVideoSignal = Date.now();
         frames.forEach((frame, j) => frame.classList.toggle('active', j === current));
         [...dots.children].forEach((dot, j) => dot.setAttribute('aria-current', j === current));
         solaPlaceRing(ring, SOLA_PAGES[current].ring);
@@ -216,6 +222,10 @@
       paused = value;
       pauseButton.innerHTML = paused ? '&#9654;' : '&#10074;&#10074;';
       pauseButton.setAttribute('aria-label', paused ? 'Play' : 'Pause');
+      if (SOLA_PAGES[current].video) {
+        lastVideoSignal = Date.now();
+        frames[current].contentWindow.postMessage({ type: paused ? 'pause' : 'play' }, location.origin);
+      }
     }
 
     function setSlideSeconds(seconds) {
@@ -238,6 +248,8 @@
 
     // Advance on a 100ms tick so pausing and manual navigation both reset cleanly.
     setInterval(() => {
+      if (paused) lastVideoSignal = Date.now();
+      if (videoPlaying()) return;
       if (!paused) elapsed += 100;
       progress.style.width = Math.min(100, (elapsed / (interval * 1000)) * 100) + '%';
       if (elapsed >= interval * 1000) show(current + 1);
@@ -267,6 +279,13 @@
         const i = SOLA_PAGES.findIndex(p => p.path === e.data.path);
         if (i >= 0) show(i);
       }
+      // Only the slide on screen drives the progress bar.
+      if (e.source !== frames[current].contentWindow) return;
+      if (e.data.type === 'video-progress') {
+        lastVideoSignal = Date.now();
+        progress.style.width = e.data.value * 100 + '%';
+      }
+      if (e.data.type === 'video-ended' && !paused) show(current + 1);
     });
 
     // Hide the controls and cursor when the mouse is still.

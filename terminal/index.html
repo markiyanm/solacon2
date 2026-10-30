@@ -11,16 +11,54 @@
   <script src="/assets/site.js"></script>
   <script src="/assets/devices.js"></script>
   <style>
+    /* Headline beside the video on wide screens; stacked on phones. The video's top
+       lines up with the product mark, and its right edge with the cards below. */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+      gap: 3rem;
+    }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; gap: 1.5rem; }
+    }
+
+    /* In /present, keep the video clear of the QR card in the top-right corner. */
+    .present .hero { margin-right: 4.5rem; }
+
+    .hero video {
+      display: block;
+      justify-self: end;
+      width: 90%;
+      aspect-ratio: 16 / 9;
+      border-radius: 1.25rem;
+      background: var(--ink);
+      box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.5), 0 0 0 1px var(--line);
+    }
+
+    @media (max-width: 900px) {
+      .hero video { width: 100%; }
+    }
+
+    .entered .hero video { animation: fade-up 0.9s var(--ease-out) 0.3s both; }
+
+    /* Two short columns keep the payment card about as tall as its neighbors. */
+    .checks.two-up {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 1rem;
+    }
+
     .device-strip {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem 0.5rem;
+      gap: 0.6rem 0.5rem;
       margin: 1rem 0 0.25rem;
     }
 
     .device-strip img {
       width: 100%;
-      height: 4.25rem;
+      height: 3.8rem;
       object-fit: contain;
       filter: drop-shadow(0 0.5rem 0.75rem rgba(0, 0, 0, 0.5));
     }
@@ -32,32 +70,37 @@
   </header>
 
   <main class="slide">
-    <div>
-      <p class="mark">Sola Terminal</p>
-      <h1>Your software. Our terminal. One cloud API.</h1>
-      <p class="lede">The Sola application runs on PAX payment devices and connects to any POS or software platform through the Sola cloud API.</p>
+    <div class="hero">
+      <div>
+        <p class="mark">Sola Terminal</p>
+        <h1>Your software. Our terminal. One cloud API.</h1>
+        <p class="lede">The Sola application runs on PAX payment devices and connects to any POS or software platform through the Sola cloud API.</p>
+      </div>
+      <video data-slide-video autoplay muted loop playsinline controls preload="auto" poster="/assets/video/sola-terminal-poster.webp" aria-label="Sola Terminal overview video">
+        <source src="/assets/video/sola-terminal.mp4" type="video/mp4">
+      </video>
     </div>
 
     <div class="grid stagger">
       <section class="card">
         <h2>Payment types</h2>
-        <ul class="checks">
+        <ul class="checks two-up">
           <li>Credit and PIN debit</li>
           <li>Tap, chip, and swipe</li>
           <li>Apple Pay and Google Pay</li>
           <li>EBT chip</li>
           <li>Gift cards</li>
-          <li>eWIC <span class="badge badge--outline">Coming soon</span></li>
+          <li>eWIC</li>
         </ul>
         <h3>Also built in</h3>
-        <ul class="checks">
+        <ul class="checks two-up">
           <li>Tip prompts</li>
           <li>Compliant surcharging</li>
         </ul>
       </section>
 
       <section class="card">
-        <h2 class="device-count">Runs on PAX devices</h2>
+        <h2>Latest Android PAX devices</h2>
         <div class="device-strip"></div>
         <a class="button" href="/terminal/devices/">Compare devices</a>
       </section>
@@ -66,9 +109,9 @@
         <h2>Why a cloud API</h2>
         <ul class="checks">
           <li><strong>Integrate once</strong> from web, desktop, or mobile software.</li>
-          <li><strong>Nothing to install:</strong> no local drivers or device SDKs.</li>
-          <li><strong>Smaller PCI scope:</strong> card data stays on the terminal, never in your POS.</li>
-          <li class="tbd"><strong>Remote management:</strong> pair devices and push updates over the air.</li>
+          <li><strong>Nothing to install:</strong> no drivers or device SDKs.</li>
+          <li><strong>Smaller PCI scope:</strong> card data never touches your POS.</li>
+          <li><strong>Remote management:</strong> name devices, see what's online, and troubleshoot.</li>
         </ul>
       </section>
     </div>
@@ -77,7 +120,6 @@
   <nav class="page-nav" aria-label="Pages"></nav>
 
   <script>
-    document.querySelector('.device-count').textContent = `Runs on ${SOLA_DEVICES.length} PAX devices`;
     document.querySelector('.device-strip').innerHTML = SOLA_DEVICES
       .map(d => `<img src="${d.image}" alt="PAX ${d.name}" title="PAX ${d.name}">`)
       .join('');

@@ -1,9 +1,10 @@
 // Shared page list: drives the prev/next links on each page and the /present carousel.
 // ring: where the Sola ring sits on that slide (center x/y in % of the screen, size in vmin).
 // In /present the ring glides between these positions as the slides change.
+// video: the slide has a video[data-slide-video]; /present moves on when it ends instead of on a timer.
 const SOLA_PAGES = [
   { path: '/', title: 'SolaCon 2', ring: { x: 82, y: 36, size: 64 } },
-  { path: '/terminal/', title: 'Sola Terminal', ring: { x: 97, y: 90, size: 58 } },
+  { path: '/terminal/', title: 'Sola Terminal', ring: { x: 97, y: 90, size: 58 }, video: true },
   { path: '/terminal/devices/', title: 'Sola Terminal devices', ring: { x: 98, y: 4, size: 34 } },
   { path: '/checkout/', title: 'Sola Checkout', ring: { x: 4, y: 98, size: 56 } },
   { path: '/collect/', title: 'Sola Collect', ring: { x: 94, y: 14, size: 46 } },
@@ -74,7 +75,8 @@ function solaRotator(root) {
   const demoLink = root.querySelector('[data-demo-link]');
   const controls = root.querySelectorAll('[data-shot]');
   const interval = Number(root.dataset.interval) || 4000;
-  const auto = shots.length > 1 && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // The booth monitor always rotates; visitors who prefer reduced motion pick for themselves.
+  const auto = shots.length > 1 && (SOLA_PRESENTING || !matchMedia('(prefers-reduced-motion: reduce)').matches);
   let shown = 0;
   let holding = false;
   let picked = false;
@@ -86,7 +88,7 @@ function solaRotator(root) {
     controls.forEach(control => {
       const selected = Number(control.dataset.shot) === i;
       control.classList.toggle('active', selected);
-      if (control.getAttribute('role') === 'tab') control.setAttribute('aria-selected', selected);
+      if (control.getAttribute('role') === 'radio') control.setAttribute('aria-checked', selected);
     });
     if (bar && shots[i].dataset.bar) bar.textContent = shots[i].dataset.bar;
     if (demoLink && shots[i].dataset.href) demoLink.href = shots[i].dataset.href;
@@ -191,15 +193,13 @@ document.addEventListener('DOMContentLoaded', () => {
     [...group.children].forEach((child, i) => child.style.setProperty('--i', i));
   });
   document.querySelectorAll('.rotator').forEach(solaRotator);
-  // The screenshot (and its bar) opens the viewer; the tabs only switch screenshots.
+  // The screenshot (and its bar) opens the viewer.
   document.querySelectorAll('.browser').forEach(browser => {
     const view = browser.querySelector('.browser-view');
     view.tabIndex = 0;
     view.setAttribute('role', 'button');
     view.setAttribute('aria-label', 'View full screenshot');
-    browser.addEventListener('click', e => {
-      if (!e.target.closest('.browser-tabs')) solaLightbox(browser);
-    });
+    browser.addEventListener('click', () => solaLightbox(browser));
     view.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -209,8 +209,27 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   solaEnter();
 
+  // Slide videos autoplay muted and loop on every visit (their controls can pause them).
+  const slideVideos = document.querySelectorAll('video[data-slide-video]');
+
   // Inside the carousel, links jump to that slide and keys control the deck.
   if (SOLA_PRESENTING && window.parent !== window) {
+    // Slide videos play once, muted, from the start each time the slide shows, and
+    // report progress so the carousel can follow them and move on when they end.
+    slideVideos.forEach(video => {
+      const report = message => parent.postMessage(message, location.origin);
+      video.controls = false;
+      video.muted = true;
+      video.loop = false;
+      video.autoplay = false;
+      video.preload = 'auto';
+      video.pause();
+      video.addEventListener('timeupdate', () => {
+        if (video.duration) report({ type: 'video-progress', value: video.currentTime / video.duration });
+      });
+      video.addEventListener('ended', () => report({ type: 'video-ended' }));
+    });
+
     document.addEventListener('click', e => {
       const link = e.target.closest('a[href]');
       if (!link) return;
@@ -223,12 +242,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
       parent.postMessage({ type: 'key', key: e.key }, location.origin);
     });
-    // Each time the carousel shows this slide, replay it from the start.
     window.addEventListener('message', e => {
-      if (e.origin !== location.origin || e.data.type !== 'enter') return;
-      document.querySelector('.lightbox')?.close();
-      solaEnter();
-      document.querySelectorAll('.rotator').forEach(rotator => rotator.solaRestart());
+      if (e.origin !== location.origin) return;
+      const { type } = e.data;
+      // Each time the carousel shows this slide, replay it from the start.
+      if (type === 'enter') {
+        document.querySelector('.lightbox')?.close();
+        solaEnter();
+        document.querySelectorAll('.rotator').forEach(rotator => rotator.solaRestart());
+        slideVideos.forEach(video => {
+          video.currentTime = 0;
+          video.play();
+        });
+      }
+      if (type === 'leave' || type === 'pause') slideVideos.forEach(video => video.pause());
+      if (type === 'play') slideVideos.forEach(video => video.play());
     });
   }
 });
