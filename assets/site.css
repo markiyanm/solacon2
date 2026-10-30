@@ -192,13 +192,6 @@ h1 em {
   object-fit: contain;
 }
 
-/* Draft content that still needs product confirmation. Remove the class once confirmed. */
-.tbd {
-  outline: 2px dashed #ffb020;
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
 .page-nav {
   display: flex;
   justify-content: space-between;
