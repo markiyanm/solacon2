@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sola Terminal devices | SolaCon 2</title>
+  <meta name="description" content="Compare the PAX devices that run Sola Terminal.">
+  <meta name="theme-color" content="#010623">
+  <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <script src="/assets/site.js"></script>
+  <script src="/assets/devices.js"></script>
+  <style>
+    .table-wrap {
+      overflow-x: auto;
+      background: var(--panel);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      backdrop-filter: blur(16px) saturate(140%);
+      border: 1px solid var(--line);
+      border-radius: 1.25rem;
+    }
+
+    table {
+      width: 100%;
+      min-width: 60rem;
+      border-collapse: collapse;
+      text-align: center;
+    }
+
+    th, td {
+      padding: 0.7rem 0.5rem;
+      border-bottom: 1px solid var(--line);
+      transition: background-color 0.2s;
+    }
+
+    tbody tr:last-child > * { border-bottom: 0; }
+
+    tbody th {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      padding-left: 1.25rem;
+      background: #070e32;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    td {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .col-hover { background: rgba(124, 157, 255, 0.08); }
+
+    thead th { vertical-align: bottom; padding-top: 1.25rem; }
+
+    .device {
+      display: grid;
+      justify-items: center;
+      gap: 0.15rem;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .device img {
+      height: 6.25rem;
+      width: 100%;
+      margin-bottom: 0.6rem;
+      object-fit: contain;
+      filter: drop-shadow(0 0.75rem 1rem rgba(0, 0, 0, 0.5));
+      transition: translate 0.35s var(--ease-out), filter 0.35s;
+    }
+
+    .device .kind { color: var(--signal); font-size: 0.75rem; font-weight: 500; }
+
+    .device .name { font-size: 1rem; font-weight: 600; }
+
+    .col-hover .device img,
+    .device:focus-visible img {
+      translate: 0 -0.35rem;
+      filter: drop-shadow(0 1.1rem 1.25rem rgba(0, 71, 255, 0.45));
+    }
+
+    .yes {
+      display: inline-grid;
+      place-items: center;
+      width: 1.6rem;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--sola-blue);
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .no { color: rgba(244, 246, 255, 0.3); }
+
+    .common {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.5rem 2rem;
+    }
+
+    .common .checks { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; }
+
+    /* Device details */
+    dialog {
+      width: min(92vw, 60rem);
+      max-height: 92vh;
+      margin: auto;
+      padding: 0;
+      overflow: auto;
+      background: #0a1238;
+      border: 1px solid var(--line);
+      border-radius: 1.5rem;
+      color: var(--text);
+    }
+
+    dialog[open] { animation: dialog-in 0.5s var(--ease-out); }
+
+    dialog::backdrop { background: rgba(1, 6, 35, 0.78); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+
+    dialog[open]::backdrop { animation: fade 0.3s; }
+
+    @keyframes dialog-in {
+      from { opacity: 0; scale: 0.96; translate: 0 1.5rem; }
+    }
+
+    .detail {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      align-items: center;
+      gap: 2.5rem;
+      padding: 2.5rem;
+    }
+
+    /* The device sits in front of a Sola ring. */
+    .detail-photo {
+      --photo-height: 24rem;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .detail-photo::before {
+      content: "";
+      position: absolute;
+      width: 82%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: conic-gradient(#0047ff, #3b74ff 15%, #0047ff 35%, #0033bd 65%, #0047ff);
+      -webkit-mask: radial-gradient(circle closest-side, transparent 66.5%, #000 67%, #000 99%, transparent);
+      mask: radial-gradient(circle closest-side, transparent 66.5%, #000 67%, #000 99%, transparent);
+      animation: ring-in 0.9s var(--ease-out) both;
+    }
+
+    .detail-photo img {
+      position: relative;
+      width: 100%;
+      height: var(--photo-height);
+      object-fit: contain;
+      filter: drop-shadow(0 1.5rem 2rem rgba(0, 0, 0, 0.6));
+      animation: photo-in 0.8s var(--ease-out) 0.1s both;
+    }
+
+    @keyframes photo-in {
+      from { opacity: 0; translate: 0 2rem; rotate: -4deg; }
+    }
+
+    .detail .kind { color: var(--signal); font-weight: 500; }
+
+    .detail h2 { font-size: 2.4rem; font-weight: 600; letter-spacing: -0.03em; line-height: 1.1; }
+
+    .detail .lede { margin-top: 0.5rem; }
+
+    .specs {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.45rem 1.5rem;
+      margin: 1.25rem 0;
+    }
+
+    .specs dt { color: var(--text-muted); }
+
+    .specs dd { font-weight: 500; }
+
+    .links { display: flex; flex-wrap: wrap; gap: 0 0.75rem; margin-top: 0.5rem; }
+
+    .close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1;
+      width: 2.5rem;
+      aspect-ratio: 1;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(244, 246, 255, 0.1);
+      color: var(--text);
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .close:hover { background: rgba(244, 246, 255, 0.2); }
+
+    @media (max-width: 700px) {
+      .detail { grid-template-columns: 1fr; gap: 1rem; padding: 1.75rem 1.5rem; }
+      .detail-photo { --photo-height: 12rem; }
+      .detail h2 { font-size: 1.9rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/"><img src="/assets/sola-logo-reverse.svg" alt="Sola Payments"></a>
+  </header>
+
+  <main class="slide">
+    <div>
+      <p class="mark">Sola Terminal</p>
+      <h1>One app. Eight PAX devices.</h1>
+      <p class="lede tap-hint">Tap a device to see its details.</p>
+    </div>
+
+    <div class="table-wrap">
+      <table></table>
+    </div>
+
+    <div class="common">
+      <strong>On every device</strong>
+      <ul class="checks"></ul>
+    </div>
+  </main>
+
+  <dialog aria-labelledby="device-name">
+    <button class="close" type="button" aria-label="Close">&times;</button>
+    <div class="detail"></div>
+  </dialog>
+
+  <nav class="page-nav" aria-label="Pages"></nav>
+
+  <script>
+    const numberWords = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+    document.querySelector('h1').textContent = `One app. ${numberWords[SOLA_DEVICES.length] || SOLA_DEVICES.length} PAX devices.`;
+
+    const table = document.querySelector('table');
+    const dialog = document.querySelector('dialog');
+    const check = value => (value ? '<span class="yes" aria-label="Yes">&#10003;</span>' : '<span class="no" aria-label="No">&mdash;</span>');
+    const yesNo = value => (value ? 'Yes' : 'No');
+    const row = (label, cell) => `<tr><th scope="row">${label}</th>${SOLA_DEVICES.map(d => `<td>${cell(d)}</td>`).join('')}</tr>`;
+
+    table.innerHTML = `
+      <thead>
+        <tr class="stagger">
+          <td></td>
+          ${SOLA_DEVICES.map(d => `
+            <th scope="col">
+              <button class="device" type="button" aria-haspopup="dialog">
+                <img src="${d.image}" alt="">
+                <span class="kind">${d.formFactor}</span>
+                <span class="name">${d.name}</span>
+              </button>
+            </th>`).join('')}
+        </tr>
+      </thead>
+      <tbody class="stagger" style="--stagger-start: 0.85s;">
+        ${row('Battery', d => check(d.battery))}
+        ${row('Printer', d => check(d.printer))}
+        ${row('Physical keypad', d => check(d.keypad))}
+        ${row('Connectivity', d => d.connectivity)}
+        ${row('Best for', d => d.bestFor)}
+      </tbody>`;
+
+    document.querySelector('.common .checks').innerHTML = SOLA_DEVICE_COMMON.map(f => `<li>${f}</li>`).join('');
+
+    // Any cell in a device's column opens that device; the header button is the keyboard target.
+    const deviceAt = cell => (cell && cell.cellIndex > 0 ? SOLA_DEVICES[cell.cellIndex - 1] : null);
+
+    table.addEventListener('click', e => {
+      const device = deviceAt(e.target.closest('th, td'));
+      if (device) openDevice(device);
+    });
+
+    table.addEventListener('mouseover', e => {
+      const index = e.target.closest('th, td')?.cellIndex;
+      table.querySelectorAll('.col-hover').forEach(cell => cell.classList.remove('col-hover'));
+      if (index > 0) [...table.rows].forEach(r => r.cells[index].classList.add('col-hover'));
+    });
+
+    table.addEventListener('mouseleave', () => {
+      table.querySelectorAll('.col-hover').forEach(cell => cell.classList.remove('col-hover'));
+    });
+
+    function openDevice(d) {
+      const links = [
+        d.paxUrl && `<a class="button" href="${d.paxUrl}" target="_blank" rel="noopener">See it on pax.us</a>`,
+        d.datasheetUrl && `<a class="button button--ghost" href="${d.datasheetUrl}" target="_blank" rel="noopener">Datasheet (PDF)</a>`,
+      ].filter(Boolean).join('');
+
+      dialog.querySelector('.detail').innerHTML = `
+        <div class="detail-photo"><img src="${d.image}" alt="PAX ${d.name}"></div>
+        <div>
+          <p class="kind">${d.formFactor}</p>
+          <h2 id="device-name">PAX ${d.name}</h2>
+          <p class="lede">Best for: ${d.bestFor}</p>
+          <dl class="specs">
+            <dt>Battery</dt><dd>${yesNo(d.battery)}${d.note ? ` (${d.note.toLowerCase()})` : ''}</dd>
+            <dt>Printer</dt><dd>${yesNo(d.printer)}</dd>
+            <dt>Physical keypad</dt><dd>${yesNo(d.keypad)}</dd>
+            <dt>Connectivity</dt><dd>${d.connectivity}</dd>
+          </dl>
+          <ul class="checks">${SOLA_DEVICE_COMMON.map(f => `<li>${f}</li>`).join('')}</ul>
+          <div class="links">${links}</div>
+        </div>`;
+      dialog.showModal();
+    }
+
+    dialog.querySelector('.close').addEventListener('click', () => dialog.close());
+    dialog.addEventListener('click', e => { if (e.target === dialog) dialog.close(); });
+
+    // In /present, close the details when the carousel comes back to this slide.
+    window.addEventListener('message', e => {
+      if (e.origin === location.origin && e.data.type === 'enter') dialog.close();
+    });
+  </script>
+</body>
+</html>

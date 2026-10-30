@@ -7,26 +7,24 @@
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#010623">
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
   <style>
-    :root {
-      --sola-blue: #0047ff;
-      --sola-blue-light: #7c9dff;
-      --sola-navy: #010623;
-      font-size: clamp(14px, 0.9vw, 24px);
-    }
-
-    * { box-sizing: border-box; margin: 0; }
-
     body {
+      display: block;
       height: 100vh;
       overflow: hidden;
-      background: var(--sola-navy);
-      color: #fff;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body.idle { cursor: none; }
+
+    /* One ring for the whole deck; it glides to each slide's spot. */
+    .ring.ready {
+      transition:
+        left 1.6s var(--ease-in-out),
+        top 1.6s var(--ease-in-out),
+        width 1.6s var(--ease-in-out);
+    }
 
     .slides iframe {
       position: absolute;
@@ -34,56 +32,61 @@
       width: 100%;
       height: 100%;
       border: 0;
+      background: transparent;
       opacity: 0;
       visibility: hidden;
-      transition: opacity 0.6s, visibility 0.6s;
+      transition: opacity 0.4s, visibility 0.4s;
     }
 
     .slides iframe.active {
       opacity: 1;
       visibility: visible;
+      transition-delay: 0.15s;
     }
 
     .progress {
       position: fixed;
       left: 0;
       bottom: 0;
-      height: 4px;
+      height: 3px;
       width: 0;
       background: var(--sola-blue);
+      box-shadow: 0 0 12px rgba(0, 71, 255, 0.8);
     }
 
+    /* Top right: the one corner every slide leaves empty. */
     .qr {
       position: fixed;
-      right: 1.5rem;
-      bottom: 1.5rem;
-      width: 9rem;
-      padding: 0.6rem;
+      top: 1.25rem;
+      right: 1.25rem;
+      width: 8rem;
+      padding: 0.6rem 0.6rem 0.5rem;
       background: #fff;
-      border-radius: 0.75rem;
-      color: var(--sola-navy);
+      border-radius: 1rem;
+      color: var(--ink);
       font-size: 0.8rem;
-      font-weight: 700;
+      font-weight: 600;
       text-align: center;
+      box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, 0.45);
     }
 
     .qr img {
       display: block;
       width: 100%;
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.2rem;
     }
 
     .controls {
       position: fixed;
       left: 50%;
       bottom: 1.5rem;
-      transform: translateX(-50%);
+      translate: -50% 0;
       display: flex;
       align-items: center;
       gap: 0.75rem;
       padding: 0.5rem 0.75rem;
       background: rgba(10, 18, 56, 0.92);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid var(--line);
       border-radius: 999px;
       transition: opacity 0.3s;
     }
@@ -97,46 +100,50 @@
       border: 0;
       border-radius: 999px;
       background: transparent;
-      color: #fff;
+      color: var(--text);
       font: inherit;
       font-size: 1rem;
       cursor: pointer;
     }
 
-    .controls button:hover { background: rgba(255, 255, 255, 0.12); }
+    .controls button:hover { background: rgba(244, 246, 255, 0.12); }
 
-    .dots { display: flex; gap: 0.4rem; }
+    .dots { display: flex; gap: 0.45rem; }
 
+    /* Each dot is a tiny Sola ring; the current slide's ring is filled. */
     .dots button {
       min-width: 0;
-      width: 0.75rem;
-      height: 0.75rem;
+      width: 0.8rem;
+      height: 0.8rem;
       padding: 0;
-      background: rgba(255, 255, 255, 0.3);
+      box-shadow: inset 0 0 0 2px rgba(124, 157, 255, 0.5);
+      transition: box-shadow 0.3s;
     }
 
-    .dots button[aria-current="true"] { background: var(--sola-blue-light); }
+    .dots button[aria-current="true"] { box-shadow: inset 0 0 0 0.4rem var(--sola-blue); }
 
     .controls label {
       display: flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.9rem;
-      color: rgba(255, 255, 255, 0.74);
+      font-size: 0.85rem;
+      color: var(--text-muted);
     }
 
     .controls input {
       width: 3.5rem;
       padding: 0.2rem 0.4rem;
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      border-radius: 0.4rem;
+      border: 1px solid var(--line);
+      border-radius: 0.5rem;
       background: transparent;
-      color: #fff;
+      color: var(--text);
       font: inherit;
     }
   </style>
 </head>
 <body>
+  <div class="ring" aria-hidden="true"><b></b><i class="ripple"></i><i class="ripple"></i><i class="tap"></i></div>
+
   <div class="slides"></div>
 
   <div class="progress"></div>
@@ -160,6 +167,8 @@
     const params = new URLSearchParams(location.search);
     let interval = Number(params.get('interval')) || Number(localStorage.getItem('solacon2.interval')) || 20;
 
+    const ring = document.querySelector('.ring');
+    const tap = ring.querySelector('.tap');
     const slides = document.querySelector('.slides');
     const dots = document.querySelector('.dots');
     const progress = document.querySelector('.progress');
@@ -182,14 +191,24 @@
       return frame;
     });
 
-    let current = 0;
+    let current = -1;
     let elapsed = 0;
     let paused = false;
 
     function show(i) {
-      current = (i + frames.length) % frames.length;
-      frames.forEach((frame, j) => frame.classList.toggle('active', j === current));
-      [...dots.children].forEach((dot, j) => dot.setAttribute('aria-current', j === current));
+      i = (i + frames.length) % frames.length;
+      if (i !== current) {
+        current = i;
+        frames.forEach((frame, j) => frame.classList.toggle('active', j === current));
+        [...dots.children].forEach((dot, j) => dot.setAttribute('aria-current', j === current));
+        solaPlaceRing(ring, SOLA_PAGES[current].ring);
+
+        // A tap ripple as the ring lands, and the slide's own entrance.
+        tap.style.animation = 'none';
+        void tap.offsetWidth;
+        tap.style.animation = 'tap 1.4s var(--ease-out) 1.2s';
+        frames[current].contentWindow.postMessage({ type: 'enter' }, location.origin);
+      }
       elapsed = 0;
     }
 
@@ -264,6 +283,7 @@
 
     setSlideSeconds(interval);
     show(0);
+    requestAnimationFrame(() => ring.classList.add('ready'));
     wake();
   </script>
 </body>

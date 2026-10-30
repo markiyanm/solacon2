@@ -9,6 +9,22 @@
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
+  <script src="/assets/devices.js"></script>
+  <style>
+    .device-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem 0.5rem;
+      margin: 1rem 0 0.25rem;
+    }
+
+    .device-strip img {
+      width: 100%;
+      height: 4.25rem;
+      object-fit: contain;
+      filter: drop-shadow(0 0.5rem 0.75rem rgba(0, 0, 0, 0.5));
+    }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -17,12 +33,12 @@
 
   <main class="slide">
     <div>
-      <p class="eyebrow">Sola Terminal</p>
-      <h1>Your software. Our terminal. <em>One cloud API.</em></h1>
+      <p class="mark">Sola Terminal</p>
+      <h1>Your software. Our terminal. One cloud API.</h1>
       <p class="lede">The Sola application runs on PAX payment devices and connects to any POS or software platform through the Sola cloud API.</p>
     </div>
 
-    <div class="grid">
+    <div class="grid stagger">
       <section class="card">
         <h2>Payment types</h2>
         <ul class="checks">
@@ -41,14 +57,9 @@
       </section>
 
       <section class="card">
-        <h2>Supported devices</h2>
-        <!-- TODO: confirm the supported PAX models. -->
-        <ul class="checks">
-          <li class="tbd">PAX A920 Pro</li>
-          <li class="tbd">PAX A80</li>
-          <li class="tbd">PAX A35</li>
-          <li class="tbd">PAX A77</li>
-        </ul>
+        <h2 class="device-count">Runs on PAX devices</h2>
+        <div class="device-strip"></div>
+        <a class="button" href="/terminal/devices/">Compare devices</a>
       </section>
 
       <section class="card">
@@ -64,5 +75,12 @@
   </main>
 
   <nav class="page-nav" aria-label="Pages"></nav>
+
+  <script>
+    document.querySelector('.device-count').textContent = `Runs on ${SOLA_DEVICES.length} PAX devices`;
+    document.querySelector('.device-strip').innerHTML = SOLA_DEVICES
+      .map(d => `<img src="${d.image}" alt="PAX ${d.name}" title="PAX ${d.name}">`)
+      .join('');
+  </script>
 </body>
 </html>

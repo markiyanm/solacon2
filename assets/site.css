@@ -1,14 +1,23 @@
+@font-face { font-family: "Poppins"; src: url("/assets/fonts/poppins-300.woff2") format("woff2"); font-weight: 300; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("/assets/fonts/poppins-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("/assets/fonts/poppins-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("/assets/fonts/poppins-600.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Poppins"; src: url("/assets/fonts/poppins-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
 :root {
+  --ink: #010623;
   --sola-blue: #0047ff;
-  --sola-blue-light: #7c9dff;
-  --sola-navy: #010623;
-  --surface: #0a1238;
-  --line: rgba(255, 255, 255, 0.12);
-  --text-muted: rgba(255, 255, 255, 0.74);
+  --signal: #7c9dff;
+  --text: #f4f6ff;
+  --text-muted: rgba(244, 246, 255, 0.72);
+  --panel: rgba(10, 18, 56, 0.72);
+  --line: rgba(124, 157, 255, 0.16);
   --gutter: clamp(1.25rem, 4vw, 4rem);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* Everything is sized in rem, so pages scale up on booth monitors. */
-  font-size: clamp(16px, 1.1vw, 30px);
+  font-size: clamp(15px, 1vw, 26px);
 }
 
 * { box-sizing: border-box; margin: 0; }
@@ -18,15 +27,103 @@ body {
   min-height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  background:
-    radial-gradient(60rem 40rem at 100% 0%, rgba(0, 71, 255, 0.28), transparent 60%),
-    var(--sola-navy);
-  color: #fff;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.45;
+  overflow-x: clip;
+  background: var(--ink);
+  color: var(--text);
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 a { color: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--signal);
+  outline-offset: 3px;
+}
+
+/* The Sola ring: the "o" from the logo, sending out contactless ripples. */
+.ring {
+  --x: 85%;
+  --y: 30%;
+  --size: 60vmin;
+  position: fixed;
+  left: var(--x);
+  top: var(--y);
+  width: var(--size);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  z-index: -1;
+  pointer-events: none;
+  animation: ring-in 1.6s var(--ease-out) both;
+}
+
+.ring::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, rgba(0, 71, 255, 0.4), rgba(0, 71, 255, 0.1) 55%, transparent);
+}
+
+.ring b,
+.ring i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+/* Same proportions as the logo: the inner radius is 67% of the outer. */
+.ring b {
+  background: conic-gradient(#0047ff, #3b74ff 15%, #0047ff 35%, #0033bd 65%, #0047ff);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 66.5%, #000 67%, #000 99%, transparent);
+  mask: radial-gradient(circle closest-side, transparent 66.5%, #000 67%, #000 99%, transparent);
+  animation: spin 40s linear infinite;
+}
+
+.ring .ripple {
+  border: 2px solid rgba(124, 157, 255, 0.5);
+  opacity: 0;
+  animation: ripple 6s var(--ease-out) 1.2s infinite;
+}
+
+.ring .ripple + .ripple { animation-delay: 4.2s; }
+
+.ring .tap {
+  border: 0.35rem solid var(--signal);
+  opacity: 0;
+  animation: tap 1.4s var(--ease-out) 0.5s;
+}
+
+@keyframes ring-in {
+  from { opacity: 0; scale: 0.8; }
+}
+
+@keyframes spin {
+  to { rotate: 1turn; }
+}
+
+@keyframes ripple {
+  from { opacity: 0.7; scale: 1; }
+  to { opacity: 0; scale: 1.9; }
+}
+
+@keyframes tap {
+  from { opacity: 0.9; scale: 0.98; }
+  to { opacity: 0; scale: 1.45; }
+}
+
+@media (max-width: 700px) {
+  .ring { --x: 96% !important; --y: 2% !important; --size: 62vmin !important; }
+}
+
+.site-header,
+.slide,
+.page-nav {
+  width: 100%;
+  max-width: 96rem;
+  margin: 0 auto;
+}
 
 .site-header {
   padding: 1.5rem var(--gutter) 0;
@@ -39,43 +136,51 @@ a { color: inherit; }
 }
 
 .slide {
-  width: 100%;
-  max-width: 96rem;
-  margin: 0 auto;
   padding: 2rem var(--gutter);
   display: grid;
   align-content: center;
   gap: 2rem;
 }
 
-.eyebrow {
+/* Product mark: a small Sola ring beside the product name. */
+.mark {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.75rem;
-  color: var(--sola-blue-light);
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+  color: var(--signal);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.mark::before {
+  content: "";
+  width: 0.9em;
+  aspect-ratio: 1;
+  border: 0.17em solid var(--sola-blue);
+  border-radius: 50%;
 }
 
 h1 {
-  font-size: clamp(2.25rem, 4.5vw, 3.75rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-size: clamp(2.4rem, 4.6vw, 4rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
-h1 em {
-  font-style: normal;
-  color: var(--sola-blue-light);
+/* Closing punctuation in Sola blue (wrapped by site.js). */
+.dot {
+  color: var(--sola-blue);
 }
 
 .lede {
-  max-width: 44em;
-  margin-top: 1rem;
+  max-width: 40em;
+  margin-top: 1.1rem;
   color: var(--text-muted);
-  font-size: 1.2rem;
+  font-size: 1.15rem;
+  font-weight: 300;
 }
 
 .grid {
@@ -90,20 +195,27 @@ h1 em {
 }
 
 .card {
+  position: relative;
   padding: 1.5rem;
-  background: var(--surface);
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid var(--line);
-  border-radius: 1rem;
+  border-radius: 1.25rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .card h2 {
-  font-size: 1.2rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   margin-bottom: 0.5rem;
 }
 
 .card h3 {
-  font-size: 1rem;
-  margin: 1rem 0 0.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 1rem 0 0.4rem;
 }
 
 .card p {
@@ -114,7 +226,7 @@ h1 em {
   list-style: none;
   padding: 0;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .checks li {
@@ -126,17 +238,18 @@ h1 em {
 .checks li::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: 0.45em;
-  width: 0.7em;
-  height: 0.4em;
-  border-left: 3px solid var(--sola-blue-light);
-  border-bottom: 3px solid var(--sola-blue-light);
+  left: 0.1rem;
+  top: 0.5em;
+  width: 0.65em;
+  height: 0.35em;
+  border-left: 2.5px solid var(--signal);
+  border-bottom: 2.5px solid var(--signal);
   transform: rotate(-45deg);
 }
 
 .checks strong {
-  color: #fff;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .badge {
@@ -146,16 +259,15 @@ h1 em {
   background: var(--sola-blue);
   color: #fff;
   font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 600;
+  line-height: 1.5;
   vertical-align: middle;
 }
 
 .badge--outline {
   background: transparent;
-  border: 1px solid var(--sola-blue-light);
-  color: var(--sola-blue-light);
+  box-shadow: inset 0 0 0 1px var(--signal);
+  color: var(--signal);
 }
 
 .note {
@@ -166,12 +278,24 @@ h1 em {
 .button {
   display: inline-block;
   margin-top: 1rem;
-  padding: 0.6em 1.2em;
-  border-radius: 0.5rem;
+  padding: 0.65em 1.3em;
+  border-radius: 999px;
   background: var(--sola-blue);
-  font-weight: 700;
+  color: #fff;
+  font-weight: 600;
   text-decoration: none;
+  transition: background-color 0.2s, translate 0.2s var(--ease-out);
 }
+
+.button:hover { background: #2a63ff; translate: 0 -2px; }
+
+.button--ghost {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--line);
+  color: var(--text);
+}
+
+.button--ghost:hover { background: rgba(124, 157, 255, 0.12); }
 
 /* Screenshot slot; swap the inner text for an <img> once screenshots exist. */
 .shot {
@@ -197,21 +321,81 @@ h1 em {
   justify-content: space-between;
   gap: 1rem;
   padding: 1.5rem var(--gutter) 2rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .page-nav a {
-  color: var(--sola-blue-light);
+  color: var(--signal);
   text-decoration: none;
 }
 
-/* Inside the /present carousel: fill the screen, no page navigation. */
+/*
+ * Entrance: headline words rise out of their line, then the rest follows.
+ * site.js adds .entered on load, and again each time /present shows the slide.
+ */
+.word {
+  display: inline-block;
+  overflow: clip;
+  padding: 0.1em 0.03em 0.16em;
+  margin: -0.1em -0.03em -0.16em;
+  vertical-align: bottom;
+}
+
+.word > span { display: inline-block; }
+
+.entered .mark { animation: fade 0.6s var(--ease-out) both; }
+
+.entered .slide h1 .word > span {
+  animation: word-rise 0.9s var(--ease-out) both;
+  animation-delay: calc(0.08s + var(--w, 0) * 0.045s);
+}
+
+.entered .lede,
+.entered .note {
+  animation: fade-up 0.8s var(--ease-out) 0.4s both;
+}
+
+.entered .stagger > * {
+  animation: fade-up 0.8s var(--ease-out) both;
+  animation-delay: calc(var(--stagger-start, 0.45s) + var(--i, 0) * 0.07s);
+}
+
+.entered .slide > .shot {
+  animation: fade-up 0.8s var(--ease-out) 0.8s both;
+}
+
+@keyframes word-rise {
+  from { translate: 0 110%; }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; translate: 0 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Inside the /present carousel: transparent so the presenter's ring shows through. */
+html.present,
+.present body {
+  background: transparent;
+}
+
 .present body {
   height: 100vh;
   overflow: hidden;
 }
 
-.present .page-nav {
+.present .page-nav,
+.present .tap-hint {
   display: none;
 }
 

@@ -1,8 +1,10 @@
 // Devices supported by Sola Terminal, from the "Sola Terminal - Current and Future
-// Device Matrix" page in Confluence (PM space). Images are from pax.us.
+// Device Matrix" page in Confluence (PM space). Images and links are from pax.us.
+// The A920 Pro has no paxUrl: its old product page now shows the A920 Pro Duo.
 const SOLA_DEVICES = [
   {
     id: 'a920pro',
+    datasheetUrl: 'https://www.pax.us/wp-content/uploads/2023/12/A920Pro-Datasheet.pdf',
     name: 'A920 Pro',
     formFactor: 'Mobile',
     image: '/assets/devices/pax-a920pro.webp',
@@ -14,6 +16,8 @@ const SOLA_DEVICES = [
   },
   {
     id: 'a920max',
+    paxUrl: 'https://www.pax.us/a920max/',
+    datasheetUrl: 'https://www.pax.us/wp-content/uploads/2023/10/A920MAX-Datasheet.pdf',
     name: 'A920 MAX',
     formFactor: 'Mobile',
     image: '/assets/devices/pax-a920max.webp',
@@ -25,6 +29,8 @@ const SOLA_DEVICES = [
   },
   {
     id: 'a920',
+    paxUrl: 'https://www.pax.us/products/mobile/a920/',
+    datasheetUrl: 'https://www.pax.us/wp-content/uploads/2024/06/A920-Datasheet.pdf',
     name: 'A920',
     formFactor: 'Mobile',
     image: '/assets/devices/pax-a920.webp',
@@ -36,6 +42,7 @@ const SOLA_DEVICES = [
   },
   {
     id: 'a6630',
+    paxUrl: 'https://www.pax.us/products/mobile/a6630/',
     name: 'A6630',
     formFactor: 'Mobile',
     image: '/assets/devices/pax-a6630.webp',
@@ -47,6 +54,7 @@ const SOLA_DEVICES = [
   },
   {
     id: 'a6650',
+    paxUrl: 'https://www.pax.us/products/mobile/a6650/',
     name: 'A6650',
     formFactor: 'Rugged mobile',
     image: '/assets/devices/pax-a6650.webp',
@@ -59,6 +67,8 @@ const SOLA_DEVICES = [
   },
   {
     id: 'a80',
+    paxUrl: 'https://www.pax.us/products/countertop/a80/',
+    datasheetUrl: 'https://www.pax.us/wp-content/uploads/2024/05/A80PCI6.X-Datasheet-5.6.24.pdf',
     name: 'A80',
     formFactor: 'Countertop',
     image: '/assets/devices/pax-a80.webp',
@@ -70,6 +80,8 @@ const SOLA_DEVICES = [
   },
   {
     id: 'a35',
+    paxUrl: 'https://www.pax.us/products/pin-pads/a35/',
+    datasheetUrl: 'https://www.pax.us/wp-content/uploads/2023/12/A35-Datasheet.pdf',
     name: 'A35',
     formFactor: 'PIN pad',
     image: '/assets/devices/pax-a35.webp',
@@ -81,6 +93,8 @@ const SOLA_DEVICES = [
   },
   {
     id: 'a3700',
+    paxUrl: 'https://www.pax.us/elys-family/elys-tablet/',
+    datasheetUrl: 'https://www.pax.us/wp-content/uploads/2024/03/Elys-A3700-Datasheet.pdf',
     name: 'A3700 Elys',
     formFactor: 'Tablet',
     image: '/assets/devices/pax-a3700.webp',
