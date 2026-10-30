@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mockup C: Device showcase | SolaCon 2</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#010623">
+  <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <script src="/assets/site.js"></script>
+  <script src="/assets/devices.js"></script>
+  <style>
+    .stage {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+      gap: 3rem;
+    }
+
+    @media (max-width: 800px) {
+      .stage { grid-template-columns: 1fr; gap: 1.5rem; }
+    }
+
+    .hero-device {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: min(46vh, 30rem);
+    }
+
+    .hero-device::before {
+      content: "";
+      position: absolute;
+      width: 70%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 71, 255, 0.55), transparent 70%);
+    }
+
+    .hero-device img {
+      position: relative;
+      width: 100%;
+      height: min(46vh, 30rem);
+      object-fit: contain;
+      filter: drop-shadow(0 1.5rem 2.5rem rgba(0, 0, 0, 0.6));
+      animation: rise 0.5s ease-out;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(1.5rem) scale(0.96); }
+    }
+
+    .info { animation: rise 0.5s ease-out; }
+
+    .info h2 { font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1; letter-spacing: -0.02em; }
+
+    .specs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+    }
+
+    .spec {
+      padding: 0.75rem 1rem;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 0.75rem;
+    }
+
+    .spec span { display: block; color: var(--text-muted); font-size: 0.8rem; }
+
+    .spec strong { font-size: 1.05rem; }
+
+    .thumbs {
+      display: flex;
+      gap: 0.75rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+
+    .thumb {
+      flex: 1 0 6.5rem;
+      display: grid;
+      grid-template-rows: 4rem auto;
+      gap: 0.4rem;
+      padding: 0.6rem;
+      background: var(--surface);
+      border: 2px solid transparent;
+      border-radius: 0.75rem;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .thumb img { width: 100%; height: 100%; object-fit: contain; }
+
+    .thumb[aria-current="true"] { border-color: var(--sola-blue); color: #fff; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/"><img src="/assets/sola-logo-reverse.svg" alt="Sola Payments"></a>
+  </header>
+
+  <main class="slide">
+    <p class="eyebrow">Sola Terminal &middot; Supported devices</p>
+
+    <div class="stage">
+      <div class="hero-device"></div>
+      <div class="info"></div>
+    </div>
+
+    <div class="thumbs"></div>
+  </main>
+
+  <nav class="page-nav" aria-label="Pages"></nav>
+
+  <script>
+    const stage = document.querySelector('.hero-device');
+    const info = document.querySelector('.info');
+    const thumbs = document.querySelector('.thumbs');
+    const yesNo = value => (value ? 'Yes' : 'No');
+    let current = 0;
+
+    thumbs.innerHTML = SOLA_DEVICES.map((d, i) => `
+      <button class="thumb" type="button" data-index="${i}">
+        <img src="${d.image}" alt="">
+        ${d.name}
+      </button>`).join('');
+
+    function select(i) {
+      current = (i + SOLA_DEVICES.length) % SOLA_DEVICES.length;
+      const d = SOLA_DEVICES[current];
+      stage.innerHTML = `<img src="${d.image}" alt="PAX ${d.name}">`;
+      info.innerHTML = `
+        <p class="eyebrow">${d.formFactor}</p>
+        <h2>PAX ${d.name}</h2>
+        <p class="lede">Best for: ${d.bestFor}</p>
+        <div class="specs">
+          <div class="spec"><span>Battery</span><strong>${yesNo(d.battery)}</strong></div>
+          <div class="spec"><span>Printer</span><strong>${yesNo(d.printer)}</strong></div>
+          <div class="spec"><span>Physical keypad</span><strong>${yesNo(d.keypad)}</strong></div>
+          <div class="spec"><span>Connectivity</span><strong>${d.connectivity}</strong></div>
+        </div>`;
+      [...thumbs.children].forEach((t, j) => t.setAttribute('aria-current', j === current));
+    }
+
+    // Cycle through devices on its own; a tap pauses the cycle for 15 seconds.
+    let resumeAt = 0;
+    setInterval(() => { if (Date.now() > resumeAt) select(current + 1); }, 4000);
+
+    thumbs.addEventListener('click', e => {
+      const thumb = e.target.closest('.thumb');
+      if (!thumb) return;
+      resumeAt = Date.now() + 15000;
+      select(Number(thumb.dataset.index));
+    });
+
+    select(0);
+  </script>
+</body>
+</html>
