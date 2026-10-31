@@ -2,6 +2,7 @@
 // ring: where the Sola ring sits on that slide (center x/y in % of the screen, size in vmin).
 // In /present the ring glides between these positions as the slides change.
 // video: the slide has a video[data-slide-video]; /present moves on when it ends instead of on a timer.
+// qr: the booth's QR code goes to this page instead of the start, with its own caption.
 const SOLA_PAGES = [
   { path: '/', title: 'SolaCon 2', ring: { x: 82, y: 36, size: 64 } },
   { path: '/terminal/', title: 'Sola Terminal', ring: { x: 97, y: 90, size: 58 }, video: true },
@@ -10,7 +11,7 @@ const SOLA_PAGES = [
   { path: '/collect/', title: 'Sola Collect', ring: { x: 94, y: 14, size: 46 } },
   { path: '/surcharging/', title: 'Surcharging', ring: { x: 102, y: 58, size: 72 } },
   { path: '/chargebacks/', title: 'Chargeback Management', ring: { x: 6, y: 104, size: 50 } },
-  { path: '/whats-next/', title: "What's next", ring: { x: 50, y: 116, size: 96 } },
+  { path: '/whats-next/', title: "What's next", ring: { x: 50, y: 116, size: 96 }, qr: { src: '/assets/qr-whats-next.svg', caption: 'Scan to vote' } },
 ];
 
 // Pages loaded with ?present are slides inside /present: hide page navigation.

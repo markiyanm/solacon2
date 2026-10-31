@@ -150,7 +150,7 @@
 
   <div class="qr">
     <img src="/assets/qr-site.svg" alt="QR code for solacon2.solapayments.dev">
-    Scan to explore
+    <span>Scan to explore</span>
   </div>
 
   <div class="controls">
@@ -208,6 +208,7 @@
         frames.forEach((frame, j) => frame.classList.toggle('active', j === current));
         [...dots.children].forEach((dot, j) => dot.setAttribute('aria-current', j === current));
         solaPlaceRing(ring, SOLA_PAGES[current].ring);
+        showQr(SOLA_PAGES[current].qr);
 
         // A tap ripple as the ring lands, and the slide's own entrance.
         tap.style.animation = 'none';
@@ -216,6 +217,16 @@
         frames[current].contentWindow.postMessage({ type: 'enter' }, location.origin);
       }
       elapsed = 0;
+    }
+
+    // Most slides send visitors to the start; a slide with its own qr sends them straight there.
+    const qrImage = document.querySelector('.qr img');
+    const qrCaption = document.querySelector('.qr span');
+    const siteQr = { src: qrImage.getAttribute('src'), alt: qrImage.alt, caption: qrCaption.textContent };
+    function showQr(qr) {
+      qrImage.src = qr ? qr.src : siteQr.src;
+      qrImage.alt = qr ? `QR code for solacon2.solapayments.dev${SOLA_PAGES[current].path}` : siteQr.alt;
+      qrCaption.textContent = qr ? qr.caption : siteQr.caption;
     }
 
     function setPaused(value) {
