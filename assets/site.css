@@ -528,19 +528,6 @@ h1 {
   from { opacity: 0; translate: 0 1rem; }
 }
 
-/*
- * Respect reduced motion for visitors, but not on the booth monitor: /present (.booth)
- * and its slides (.present) are a display, and PCs often have animations turned off.
- */
-@media (prefers-reduced-motion: reduce) {
-  :root:not(.present, .booth) *,
-  :root:not(.present, .booth) *::before,
-  :root:not(.present, .booth) *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
 /* Inside the /present carousel: transparent so the presenter's ring shows through. */
 html.present,
 .present body {

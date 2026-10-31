@@ -75,8 +75,7 @@ function solaRotator(root) {
   const demoLink = root.querySelector('[data-demo-link]');
   const controls = root.querySelectorAll('[data-shot]');
   const interval = Number(root.dataset.interval) || 4000;
-  // The booth monitor always rotates; visitors who prefer reduced motion pick for themselves.
-  const auto = shots.length > 1 && (SOLA_PRESENTING || !matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const auto = shots.length > 1;
   let shown = 0;
   let holding = false;
   let picked = false;

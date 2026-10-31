@@ -475,8 +475,6 @@
     const demo = document.querySelector('.letter-demo');
     const evidence = demo.querySelector('.evidence');
     const points = demo.querySelector('.paper-points');
-    // The booth monitor always plays; visitors who prefer reduced motion see a still letter.
-    const calm = !SOLA_PRESENTING && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const have = new Set();
 
     evidence.innerHTML = EVIDENCE
@@ -505,7 +503,6 @@
       const next = EVIDENCE[step];
       if (next) have.add(next.id);
       render(next && next.id);
-      if (calm) return;
       demoTimer = setTimeout(() => playDemo(step < EVIDENCE.length ? step + 1 : 0), next ? 1600 : 3200);
     }
 
@@ -527,16 +524,10 @@
 
     // Each time the booth carousel shows this slide, start the letter over.
     window.addEventListener('message', e => {
-      if (e.origin === location.origin && e.data.type === 'enter' && !calm) playDemo();
+      if (e.origin === location.origin && e.data.type === 'enter') playDemo();
     });
 
-    // With reduced motion, show a letter part way filled in instead of playing.
-    if (calm) {
-      EVIDENCE.slice(0, 4).forEach(e => have.add(e.id));
-      render();
-    } else {
-      playDemo();
-    }
+    playDemo();
 
     // Disputes won per month, from the Chargeback Management dashboard (MidMetrics webhooks),
     // as of Oct 30, 2026. October is still open, so it's drawn hatched.
