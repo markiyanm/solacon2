@@ -4,11 +4,370 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chargeback Management | SolaCon 2</title>
-  <meta name="description" content="Sola Chargeback Management: get alerted, respond, upload evidence, and track results in one portal.">
+  <meta name="description" content="Sola Chargeback Management: merchants get an email, click into the case, and file a guided dispute, or let RCVR fight it for them.">
   <meta name="theme-color" content="#010623">
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
+  <style>
+    :root {
+      --was: #ff8f80;
+      --icon-check-white: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+      --icon-check-blue: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230047ff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+    }
+
+    .top {
+      display: grid;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    @media (min-width: 1000px) {
+      .top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); }
+    }
+
+    /* Before and now: the old hand-offs, struck through, over the new path. */
+    .then-now {
+      display: grid;
+      gap: 0.7rem;
+      margin-top: 1.75rem;
+    }
+
+    .lane {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .lane-label {
+      flex: 0 0 3.6rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .lane ol {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem 1.1rem;
+      padding: 0;
+      list-style: none;
+    }
+
+    .lane li {
+      position: relative;
+      padding: 0.35em 0.9em;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* A short connector between steps. */
+    .lane li + li::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: -0.85rem;
+      width: 0.6rem;
+      height: 1.5px;
+      background: var(--line);
+    }
+
+    .was li {
+      box-shadow: inset 0 0 0 1px var(--line);
+      color: rgba(244, 246, 255, 0.45);
+      text-decoration: line-through;
+      text-decoration-color: rgba(255, 143, 128, 0.7);
+    }
+
+    .now li {
+      background: var(--sola-blue);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .now li + li::before { background: var(--sola-blue); }
+
+    .entered .now li {
+      animation: fade-up 0.6s var(--ease-out) both;
+      animation-delay: calc(0.9s + var(--i, 0) * 0.15s);
+    }
+
+    /* The letter card: tap evidence and the dispute letter fills in, as it does in the portal. */
+    .letter-demo {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .demo-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.25rem 1rem;
+    }
+
+    .letter-demo h2 { margin: 0; }
+
+    .letter-demo .tap-hint { font-size: 0.85rem; }
+
+    .demo-body {
+      display: grid;
+      gap: 1.25rem;
+      align-items: start;
+    }
+
+    @media (min-width: 560px) {
+      .demo-body { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); }
+    }
+
+    .evidence {
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .evidence button {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      width: 100%;
+      padding: 0.45rem 0.75rem;
+      border: 0;
+      border-radius: 0.75rem;
+      background: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .evidence button::before {
+      content: "";
+      flex: none;
+      width: 1.1rem;
+      aspect-ratio: 1;
+      border-radius: 0.3rem;
+      box-shadow: inset 0 0 0 1.5px var(--signal);
+      background: transparent center / 75% no-repeat;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .evidence button:hover { background: rgba(124, 157, 255, 0.1); }
+
+    .evidence button[aria-pressed="true"] {
+      background: rgba(0, 71, 255, 0.2);
+      box-shadow: inset 0 0 0 1.5px var(--sola-blue);
+    }
+
+    .evidence button[aria-pressed="true"]::before {
+      background-color: var(--sola-blue);
+      background-image: var(--icon-check-white);
+      box-shadow: none;
+    }
+
+    .evidence .note { margin-top: 0.35rem; font-size: 0.8rem; }
+
+    .evidence .note strong { color: var(--text); font-weight: 600; }
+
+    /* The letter itself, on paper. */
+    .paper {
+      display: grid;
+      gap: 0.55rem;
+      padding: 1rem 1.25rem;
+      border-radius: 0.9rem;
+      background: #fff;
+      color: var(--ink);
+      font-size: 0.78rem;
+      box-shadow: 0 1.25rem 2.5rem rgba(0, 0, 0, 0.45);
+    }
+
+    .paper-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem;
+    }
+
+    .paper h3 { font-size: 0.95rem; font-weight: 600; }
+
+    .paper-tag {
+      padding: 0.15em 0.7em;
+      border-radius: 999px;
+      background: #e6edff;
+      color: var(--sola-blue);
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    /* .paper beats the site's .card p, which would make this text light on white. */
+    .paper .paper-case {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 0.5rem;
+      background: #f3f5fb;
+      color: #4a5275;
+    }
+
+    .paper-case b { color: var(--ink); font-weight: 600; }
+
+    .paper-points {
+      display: grid;
+      align-content: start;
+      gap: 0.1rem;
+      min-height: 10em;
+      padding: 0;
+      list-style: none;
+    }
+
+    .paper-points li {
+      position: relative;
+      padding: 0.1rem 0.4rem 0.1rem 1.5rem;
+      border-radius: 0.3rem;
+    }
+
+    .paper-points li::before {
+      content: "";
+      position: absolute;
+      left: 0.25rem;
+      top: 0.3em;
+      width: 0.95em;
+      height: 0.95em;
+      background: var(--icon-check-blue) center / contain no-repeat;
+    }
+
+    .paper-points li.new { animation: write-in 1.2s var(--ease-out); }
+
+    @keyframes write-in {
+      from { opacity: 0; translate: 0.5rem 0; background: #dbe5ff; }
+      40% { opacity: 1; translate: 0 0; background: #dbe5ff; }
+    }
+
+    .paper-points .empty { padding-left: 0; color: #6b7394; }
+
+    .paper-points .empty::before { display: none; }
+
+    .paper-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding-top: 0.6rem;
+      border-top: 1px solid #e3e7f2;
+      color: #4a5275;
+    }
+
+    .paper-foot b {
+      padding: 0.35em 0.9em;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .paper-foot b.off { background: #e3e7f2; color: #8a91ad; }
+
+    /* Live since February: disputes won per month. */
+    .proof-figure {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 0.6rem;
+    }
+
+    .proof-figure strong {
+      color: var(--text);
+      font-size: 2.2rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .bars {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 0.35rem;
+      margin-top: 0.9rem;
+    }
+
+    .bar {
+      display: grid;
+      grid-template-rows: 4.5rem auto;
+      gap: 0.35rem;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--text-muted);
+      font: inherit;
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+
+    .bar i {
+      position: relative;
+      align-self: end;
+      height: calc(var(--h) * 100%);
+      min-height: 3px;
+      border-radius: 4px 4px 0 0;
+      background: #3b74ff;
+      transition: background-color 0.3s;
+    }
+
+    .bar.so-far i {
+      background: repeating-linear-gradient(135deg, #3b74ff 0 2px, rgba(59, 116, 255, 0.25) 2px 6px);
+    }
+
+    .bar:hover i { background-color: #5b8bff; }
+
+    .bar[aria-pressed="true"] i { background: #b3c6ff; }
+
+    .bar[aria-pressed="true"] { color: var(--text); font-weight: 600; }
+
+    /* The picked month's count sits on top of its bar. */
+    .bar[aria-pressed="true"] i::after {
+      content: attr(data-value);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      translate: -50% -0.25rem;
+      color: var(--text);
+      font-size: 0.75rem;
+      font-style: normal;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .bar-caption { min-height: 3em; margin-top: 0.75rem; }
+
+    .cards .note { margin-top: 0.9rem; }
+
+    .cards .start {
+      padding-top: 0.9rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .cards .start strong { color: var(--text); font-weight: 600; }
+
+    .entered .letter-demo { animation: fade-up 0.8s var(--ease-out) 0.35s both; }
+
+    @media (max-width: 700px) {
+      .letter-demo { padding: 1.1rem; }
+      .lane { align-items: flex-start; }
+      .lane-label { padding-top: 0.35em; }
+    }
+
+    /* On the booth screen, leave the top right corner to the QR code. */
+    .present .letter-demo { gap: 0.8rem; margin-right: 5.5rem; }
+  </style>
 </head>
 <body>
   <header class="site-header">
@@ -16,35 +375,209 @@
   </header>
 
   <main class="slide">
-    <div>
-      <p class="mark">Chargeback Management</p>
-      <h1>Fight chargebacks in one place.</h1>
-      <p class="lede">A portal where merchants see every chargeback, respond with evidence, and learn from how they've done.</p>
+    <div class="top">
+      <div>
+        <p class="mark">Chargeback Management</p>
+        <h1>Win back more. Chase less.</h1>
+        <p class="lede">Merchants answer chargebacks themselves now: no mailed notices, no tickets, no waiting on Support. Or they let RCVR fight every dispute for them.</p>
+
+        <div class="then-now">
+          <div class="lane was">
+            <span class="lane-label">Before</span>
+            <ol>
+              <li>Mailed notice</li>
+              <li>Email Support</li>
+              <li>Support logs into EIDS</li>
+            </ol>
+          </div>
+          <div class="lane now">
+            <span class="lane-label">Now</span>
+            <ol>
+              <li style="--i: 0">Email alert</li>
+              <li style="--i: 1">One click to the case</li>
+              <li style="--i: 2">Dispute in 4 steps</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <section class="card letter-demo" aria-labelledby="letter-title">
+        <div class="demo-head">
+          <h2 id="letter-title">The letter writes itself</h2>
+          <p class="note tap-hint">Tap the evidence you have.</p>
+        </div>
+
+        <div class="demo-body">
+          <div class="evidence" role="group" aria-label="Evidence"></div>
+
+          <article class="paper" aria-label="Dispute letter preview">
+            <div class="paper-head">
+              <h3>Chargeback reversal</h3>
+              <span class="paper-tag">Filled in for you</span>
+            </div>
+            <p class="paper-case"><span>Reason 13.1 · Services not received</span><b>$184.00</b></p>
+            <ul class="paper-points"></ul>
+            <div class="paper-foot">
+              <span class="count"></span>
+              <b>Save and download</b>
+            </div>
+          </article>
+        </div>
+      </section>
     </div>
 
-    <div class="grid stagger">
-      <section class="card">
-        <h2>Instant notifications</h2>
-        <p>Merchants hear about new chargebacks right away, so no deadline slips by.</p>
+    <div class="grid stagger cards" style="--stagger-start: 0.7s;">
+      <section class="card proof">
+        <h2>Live since February</h2>
+        <p class="proof-figure"><strong>$3.0M</strong> won back for merchants</p>
+        <div class="bars" role="group" aria-label="Disputes won by month"></div>
+        <p class="note bar-caption" aria-live="polite"></p>
       </section>
+
       <section class="card">
-        <h2>Respond online</h2>
-        <p>Review each case and submit a response straight from the portal.</p>
+        <h2>What merchants get</h2>
+        <ul class="checks">
+          <li><strong>An email</strong> for every chargeback, with a link</li>
+          <li><strong>One click in</strong>, even without a portal login</li>
+          <li><strong>One list</strong> of every chargeback in the portal</li>
+          <li><strong>Transaction details</strong> filled in for them</li>
+          <li><strong>A letter preview</strong> before it goes to the bank</li>
+        </ul>
       </section>
+
       <section class="card">
-        <h2>Upload evidence</h2>
-        <p>Attach receipts, signatures, and other documents to support each case.</p>
-      </section>
-      <section class="card">
-        <h2>Track results</h2>
-        <p>Historical metrics show how disputes have gone over time.</p>
+        <h2>What you get</h2>
+        <ul class="checks">
+          <li><strong>New revenue</strong> from every plan, at your markup</li>
+          <li><strong>Self-Service:</strong> merchants dispute in the portal</li>
+          <li><strong>Fully Managed:</strong> chargeback experts fight it end to end</li>
+          <li><strong>No support tickets</strong> or EIDS logins</li>
+        </ul>
+        <p class="note start">Set your portfolio's monthly fee in <strong>QuickAssist</strong>.</p>
       </section>
     </div>
-
-    <!-- TODO: add assets/screenshots/chargebacks.png and swap in an <img>. -->
-    <div class="shot">Chargeback portal screenshot</div>
   </main>
 
   <nav class="page-nav" aria-label="Pages"></nav>
+
+  <script>
+    // The letter card. Each piece of evidence adds its own line to the letter, in a fixed order,
+    // the way the portal's letter preview updates from what the merchant enters.
+    const EVIDENCE = [
+      { id: 'agreement', label: 'Signed agreement', line: 'Signed service agreement, attached.' },
+      { id: 'receipt', label: 'Receipt', line: 'Itemized receipt for the purchase, attached.' },
+      { id: 'photos', label: 'Photos', line: 'Photos showing the service was delivered.' },
+      { id: 'avs', label: 'Address match', line: 'Address and ZIP matched at authorization.' },
+      { id: 'customer', label: 'Customer details', line: 'Name, email, and phone from the order.' },
+      { id: 'history', label: 'Billing history', line: 'Prior payments from this card, never disputed.' },
+    ];
+
+    const demo = document.querySelector('.letter-demo');
+    const evidence = demo.querySelector('.evidence');
+    const points = demo.querySelector('.paper-points');
+    // The booth monitor always plays; visitors who prefer reduced motion see a still letter.
+    const calm = !SOLA_PRESENTING && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const have = new Set();
+
+    evidence.innerHTML = EVIDENCE
+      .map(e => `<button type="button" data-evidence="${e.id}" aria-pressed="false">${e.label}</button>`)
+      .join('') +
+      // AVS full match vs no match, from the Chargeback Management dashboard (all time, Oct 30, 2026).
+      '<p class="note">From our data: a full address match wins <strong>3&times; as often</strong>.</p>';
+
+    function render(added) {
+      evidence.querySelectorAll('button').forEach(button => {
+        button.setAttribute('aria-pressed', have.has(button.dataset.evidence));
+      });
+      const lines = EVIDENCE.filter(e => have.has(e.id));
+      points.innerHTML = lines.length
+        ? lines.map(e => `<li${e.id === added ? ' class="new"' : ''}>${e.line}</li>`).join('')
+        : '<li class="empty">Add evidence and it shows up here.</li>';
+      demo.querySelector('.count').textContent = `${lines.length} of ${EVIDENCE.length} added`;
+      demo.querySelector('.paper-foot b').classList.toggle('off', !lines.length);
+    }
+
+    // Until someone taps, the evidence fills in on its own, as it does on the booth screen.
+    let demoTimer;
+    function playDemo(step = 0) {
+      clearTimeout(demoTimer);
+      if (step === 0) have.clear();
+      const next = EVIDENCE[step];
+      if (next) have.add(next.id);
+      render(next && next.id);
+      if (calm) return;
+      demoTimer = setTimeout(() => playDemo(step < EVIDENCE.length ? step + 1 : 0), next ? 1600 : 3200);
+    }
+
+    function stopDemo() {
+      clearTimeout(demoTimer);
+      points.setAttribute('aria-live', 'polite');
+    }
+
+    evidence.addEventListener('focusin', stopDemo);
+    evidence.addEventListener('click', e => {
+      const button = e.target.closest('button');
+      if (!button) return;
+      stopDemo();
+      const id = button.dataset.evidence;
+      if (have.has(id)) have.delete(id);
+      else have.add(id);
+      render(have.has(id) && id);
+    });
+
+    // Each time the booth carousel shows this slide, start the letter over.
+    window.addEventListener('message', e => {
+      if (e.origin === location.origin && e.data.type === 'enter' && !calm) playDemo();
+    });
+
+    // With reduced motion, show a letter part way filled in instead of playing.
+    if (calm) {
+      EVIDENCE.slice(0, 4).forEach(e => have.add(e.id));
+      render();
+    } else {
+      playDemo();
+    }
+
+    // Disputes won per month, from the Chargeback Management dashboard (MidMetrics webhooks),
+    // as of Oct 30, 2026. October is still open, so it's drawn hatched.
+    const MONTHS = [
+      { name: 'February', won: 51, recovered: 17657 },
+      { name: 'March', won: 225, recovered: 130108 },
+      { name: 'April', won: 650, recovered: 289973 },
+      { name: 'May', won: 637, recovered: 314052 },
+      { name: 'June', won: 467, recovered: 860063 },
+      { name: 'July', won: 565, recovered: 394029 },
+      { name: 'August', won: 621, recovered: 274356 },
+      { name: 'September', won: 1036, recovered: 466982, best: true },
+      { name: 'October', won: 692, recovered: 245355, open: 5938 },
+    ];
+
+    const bars = document.querySelector('.bars');
+    const caption = document.querySelector('.bar-caption');
+    const count = new Intl.NumberFormat('en-US');
+    const thousands = n => '$' + Math.round(n / 1000) + 'K';
+    const most = Math.max(...MONTHS.map(m => m.won));
+
+    bars.innerHTML = MONTHS.map((m, i) => `
+      <button type="button" class="bar${m.open ? ' so-far' : ''}" data-i="${i}" aria-pressed="false"
+        aria-label="${m.name}: ${count.format(m.won)} disputes won">
+        <i style="--h: ${m.won / most}" data-value="${count.format(m.won)}"></i>${m.name[0]}
+      </button>`).join('');
+
+    function pickMonth(i) {
+      const m = MONTHS[i];
+      bars.querySelectorAll('.bar').forEach(bar => bar.setAttribute('aria-pressed', Number(bar.dataset.i) === i));
+      caption.textContent = m.open
+        ? `${m.name} so far: ${count.format(m.won)} won, with ${count.format(m.open)} still open.`
+        : `${m.name}: ${count.format(m.won)} disputes won${m.best ? ', the most yet,' : ''} and ${thousands(m.recovered)} recovered.`;
+    }
+
+    bars.addEventListener('click', e => {
+      const bar = e.target.closest('.bar');
+      if (bar) pickMonth(Number(bar.dataset.i));
+    });
+
+    pickMonth(MONTHS.findIndex(m => m.best));
+  </script>
 </body>
 </html>

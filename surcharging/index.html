@@ -512,7 +512,8 @@
     const decides = ruling.querySelector('.decides');
     const verdict = ruling.querySelector('.verdict');
     const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-    const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // The booth monitor always plays; visitors who prefer reduced motion pick for themselves.
+    const calm = !SOLA_PRESENTING && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     MAP.forEach((row, r) => {
       row.match(/../g).forEach((code, c) => {
