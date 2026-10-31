@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>What's next results | SolaCon 2</title>
+  <meta name="theme-color" content="#010623">
+  <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <script src="/assets/site.js"></script>
+  <style>
+    .slide { align-content: start; }
+
+    .unlock {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: end;
+    }
+
+    .unlock label { display: grid; gap: 0.4rem; font-weight: 600; }
+
+    .unlock input,
+    .tools select {
+      padding: 0.6em 0.9em;
+      border: 1px solid var(--line);
+      border-radius: 0.75rem;
+      background: rgba(244, 246, 255, 0.06);
+      color: var(--text);
+      font: inherit;
+      font-size: max(16px, 1rem);
+    }
+
+    .tools select option { background: #0a1238; }
+
+    button.button {
+      margin-top: 0;
+      border: 0;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .message { color: var(--text-muted); }
+    .message.bad { color: #ff9b9b; font-weight: 600; }
+    .message:empty { display: none; }
+
+    .unlock[hidden],
+    .report[hidden] { display: none; }
+    .report { display: grid; gap: 2rem; }
+
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem 3rem;
+      color: var(--text-muted);
+    }
+
+    .stats b {
+      display: block;
+      color: var(--text);
+      font-size: 2.6rem;
+      font-weight: 600;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    th, td {
+      padding: 0.65rem 0.8rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.why { min-width: 16rem; color: var(--text-muted); }
+
+    /* Merchants per idea: one stacked bar, light to bright as the books get bigger. */
+    .sizes {
+      display: flex;
+      gap: 2px;
+      width: 12rem;
+      height: 0.8rem;
+    }
+
+    .sizes span { min-width: 2px; }
+    .sizes span:last-child { border-radius: 0 4px 4px 0; }
+    .size-few { background: #2b4596; }
+    .size-dozens { background: #4f7bff; }
+    .size-many { background: #b3c6ff; }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.25rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 0.8rem;
+      height: 0.8rem;
+      margin-right: 0.4rem;
+      border-radius: 3px;
+      vertical-align: -0.1em;
+    }
+
+    .tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tools div { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+
+    h2.section { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.9rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/"><img src="/assets/sola-logo-reverse.svg" alt="Sola Payments"></a>
+  </header>
+
+  <main class="slide">
+    <div>
+      <p class="mark">What's next · Product team only</p>
+      <h1>What agents asked for.</h1>
+    </div>
+
+    <form class="unlock">
+      <label>Results key <input type="password" name="key" autocomplete="current-password" required></label>
+      <button class="button" type="submit">Show results</button>
+    </form>
+    <p class="message" role="status"></p>
+
+    <div class="report" hidden>
+      <div class="stats"></div>
+
+      <section>
+        <h2 class="section">By idea</h2>
+        <div class="legend">
+          <span><i class="size-few"></i>A few merchants</span>
+          <span><i class="size-dozens"></i>10 to 50</span>
+          <span><i class="size-many"></i>More than 50</span>
+        </div>
+        <div class="table-wrap"><table class="by-idea"></table></div>
+      </section>
+
+      <section>
+        <div class="tools">
+          <h2 class="section">Every vote</h2>
+          <div>
+            <select aria-label="Show votes for"></select>
+            <button class="button button--ghost" type="button" data-refresh>Refresh</button>
+            <button class="button" type="button" data-csv>Download CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table class="votes"></table></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const IDEAS = {
+      'clerk-pos': 'Clerk POS',
+      terminal: 'Standalone Sola Terminal',
+      bnpl: 'Buy Now, Pay Later',
+      'cash-advance': 'Merchant Cash Advance',
+      'checkout-templates': 'More Checkout templates',
+      'otc-cards': 'OTC benefits cards',
+      other: 'Something else',
+    };
+    const SIZES = { few: 'A few', dozens: '10 to 50', many: 'More than 50' };
+    const KINDS = { retail: 'Retail', restaurant: 'Restaurants', grocery: 'Grocery', pharmacy: 'Pharmacy', medical: 'Medical', auto: 'Auto', services: 'Services', ecommerce: 'Ecommerce', nonprofit: 'Nonprofit', other: 'Other' };
+    const kindNames = kinds => kinds.map(kind => KINDS[kind] || kind).join(', ');
+
+    // Everything agents typed is escaped before it's shown.
+    const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const when = iso => new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+    const unlock = document.querySelector('.unlock');
+    const message = document.querySelector('.message');
+    const report = document.querySelector('.report');
+    const filter = document.querySelector('select');
+    let data = null;
+
+    function say(text, bad) {
+      message.textContent = text;
+      message.classList.toggle('bad', Boolean(bad));
+    }
+
+    async function load() {
+      let key = '';
+      try { key = sessionStorage.getItem('solacon2.resultsKey') || ''; } catch { /* no storage */ }
+      key = unlock.elements.namedItem('key').value || key;
+      if (!key) return;
+      say('Loading…');
+      try {
+        const response = await fetch('/api/results/', { headers: { Authorization: `Bearer ${key}` }, cache: 'no-store' });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.error || `The server said ${response.status}.`);
+        try { sessionStorage.setItem('solacon2.resultsKey', key); } catch { /* no storage */ }
+        data = body;
+        unlock.hidden = true;
+        say(`Updated ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}.`);
+        render();
+      } catch (error) {
+        say(error.message, true);
+      }
+    }
+
+    function render() {
+      const ballots = data.ballots;
+      report.hidden = false;
+      document.querySelector('.stats').innerHTML = `
+        <p><b>${data.agents}</b> agents</p>
+        <p><b>${data.offices}</b> offices</p>
+        <p><b>${ballots.filter(b => b.idea !== 'other').length}</b> votes</p>
+        <p><b>${ballots.filter(b => b.pilot).length}</b> pilot offers</p>
+        <p><b>${ballots.filter(b => b.idea === 'other').length}</b> new ideas</p>`;
+
+      const rows = Object.keys(IDEAS).map(id => {
+        const mine = ballots.filter(b => b.idea === id);
+        const sizes = Object.keys(SIZES).map(size => [size, mine.filter(b => b.size === size).length]);
+        const kinds = {};
+        mine.forEach(b => b.kinds.forEach(kind => { kinds[kind] = (kinds[kind] || 0) + 1; }));
+        const topKinds = Object.entries(kinds).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([kind, n]) => `${KINDS[kind] || kind} (${n})`).join(', ');
+        return { id, count: mine.length, sizes, pilots: mine.filter(b => b.pilot).length, topKinds };
+      }).sort((a, b) => b.count - a.count);
+      const most = Math.max(1, ...rows.map(r => r.count));
+
+      document.querySelector('.by-idea').innerHTML = `
+        <thead><tr><th>Idea</th><th class="num">Votes</th><th>Merchants</th><th class="num">Pilot</th><th>Top merchant types</th></tr></thead>
+        <tbody>${rows.map(r => `
+          <tr>
+            <td>${IDEAS[r.id]}</td>
+            <td class="num">${r.count}</td>
+            <td><div class="sizes" style="width: ${(r.count / most) * 12}rem">${r.sizes.filter(([, n]) => n).map(([size, n]) =>
+              `<span class="size-${size}" style="flex: ${n}" title="${SIZES[size]}: ${n}"></span>`).join('')}</div></td>
+            <td class="num">${r.pilots}</td>
+            <td>${esc(r.topKinds) || '—'}</td>
+          </tr>`).join('')}</tbody>`;
+
+      const current = filter.value;
+      filter.innerHTML = `<option value="">All ideas (${ballots.length})</option>` +
+        Object.entries(IDEAS).map(([id, name]) => `<option value="${id}">${name} (${ballots.filter(b => b.idea === id).length})</option>`).join('');
+      filter.value = current;
+      renderVotes();
+    }
+
+    function shown() {
+      return data.ballots.filter(b => !filter.value || b.idea === filter.value);
+    }
+
+    function renderVotes() {
+      const list = shown();
+      document.querySelector('.votes').innerHTML = `
+        <thead><tr><th>When</th><th>Agent</th><th>Office</th><th>Idea</th><th>Merchants</th><th>Types</th><th>Why or idea</th><th>Pilot</th></tr></thead>
+        <tbody>${list.map(b => `
+          <tr>
+            <td>${esc(when(b.at))}</td>
+            <td>${esc(b.name)}</td>
+            <td>${esc(b.office) || '—'}</td>
+            <td>${esc(IDEAS[b.idea])}</td>
+            <td>${esc(SIZES[b.size] || '—')}</td>
+            <td>${esc(kindNames(b.kinds)) || '—'}</td>
+            <td class="why">${esc(b.text || b.why) || '—'}</td>
+            <td>${b.pilot ? 'Yes' : ''}</td>
+          </tr>`).join('') || '<tr><td colspan="8">No votes yet.</td></tr>'}</tbody>`;
+    }
+
+    function csv() {
+      // A leading = + - or @ would make a spreadsheet run the cell as a formula.
+      const cell = value => `"${String(value ?? '').replace(/^[=+\-@]/, "'$&").replace(/"/g, '""')}"`;
+      const lines = [['When', 'Agent', 'Office', 'Idea', 'Merchants', 'Types', 'Why or idea', 'Pilot']]
+        .concat(shown().map(b => [b.at, b.name, b.office, IDEAS[b.idea], SIZES[b.size] || '', kindNames(b.kinds), b.text || b.why, b.pilot ? 'Yes' : '']));
+      const blob = new Blob(['﻿' + lines.map(line => line.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `whats-next-votes-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    unlock.addEventListener('submit', e => { e.preventDefault(); load(); });
+    filter.addEventListener('change', renderVotes);
+    document.querySelector('[data-refresh]').addEventListener('click', load);
+    document.querySelector('[data-csv]').addEventListener('click', csv);
+    load();
+  </script>
+</body>
+</html>

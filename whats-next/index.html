@@ -4,53 +4,811 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>What's next | SolaCon 2</title>
-  <meta name="description" content="Product ideas Sola is exploring. Tell us which ones your merchants need.">
+  <meta name="description" content="Product ideas Sola is exploring. Vote for the ones your merchants need.">
   <meta name="theme-color" content="#010623">
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
+  <style>
+    .idea {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .idea p { flex: 1; }
+
+    .vote {
+      align-self: flex-start;
+      margin-top: 1.25rem;
+      padding: 0.6em 1.2em;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, box-shadow 0.2s;
+    }
+
+    .vote:hover { background: rgba(124, 157, 255, 0.12); }
+
+    .vote.voted {
+      background: var(--sola-blue);
+      box-shadow: inset 0 0 0 1.5px var(--sola-blue);
+    }
+
+    .vote.voted::before { content: "\2713\00a0 "; }
+
+    .suggest {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1.25rem;
+    }
+
+    .suggest .vote { margin-top: 0; }
+
+    .turnout { margin-top: 1rem; }
+    .turnout:empty { display: none; }
+
+    /* Booth only: the live count, the scan prompt, and a meter on each idea. */
+    .live,
+    .meter { display: none; }
+
+    /* The vote sheet: a bottom sheet on phones, a dialog on bigger screens. */
+    .sheet {
+      width: min(92vw, 34rem);
+      max-height: 92vh;
+      margin: auto;
+      padding: 0;
+      overflow: auto;
+      overscroll-behavior: contain;
+      background: #0a1238;
+      border: 1px solid var(--line);
+      border-radius: 1.5rem;
+      color: var(--text);
+    }
+
+    .sheet[open] { animation: sheet-in 0.45s var(--ease-out); }
+    .sheet::backdrop { background: rgba(1, 6, 35, 0.78); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+    .sheet[open]::backdrop { animation: fade 0.3s; }
+
+    @keyframes sheet-in {
+      from { opacity: 0; translate: 0 1.5rem; }
+    }
+
+    @media (max-width: 700px) {
+      .sheet {
+        width: 100vw;
+        max-width: none;
+        margin: auto 0 0;
+        border-radius: 1.5rem 1.5rem 0 0;
+        border-bottom: 0;
+      }
+
+      @keyframes sheet-in {
+        from { translate: 0 100%; }
+      }
+    }
+
+    .sheet form,
+    .sheet .done {
+      display: grid;
+      gap: 1.4rem;
+      padding: 1.75rem;
+    }
+
+    .sheet [hidden] { display: none; }
+
+    .sheet-head { padding-right: 2.5rem; }
+
+    .sheet h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    .close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(244, 246, 255, 0.1);
+      color: var(--text);
+      font-size: 1.4rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .close:hover { background: rgba(244, 246, 255, 0.2); }
+
+    .sheet fieldset {
+      border: 0;
+      padding: 0;
+      margin: 0;
+      min-width: 0;
+    }
+
+    .sheet legend,
+    .field > span {
+      display: block;
+      margin-bottom: 0.55rem;
+      font-weight: 600;
+    }
+
+    .optional {
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .chips label { position: relative; }
+
+    .chips input {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .chips span {
+      display: block;
+      padding: 0.45em 1em;
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: background-color 0.2s, box-shadow 0.2s;
+    }
+
+    .chips label:hover span { background: rgba(124, 157, 255, 0.12); }
+
+    .chips input:checked + span {
+      background: var(--sola-blue);
+      box-shadow: inset 0 0 0 1.5px var(--sola-blue);
+    }
+
+    .chips input:focus-visible + span {
+      outline: 3px solid var(--signal);
+      outline-offset: 2px;
+    }
+
+    .field { display: block; }
+
+    .field input,
+    .field textarea {
+      display: block;
+      width: 100%;
+      padding: 0.7em 0.9em;
+      border: 1px solid var(--line);
+      border-radius: 0.75rem;
+      background: rgba(244, 246, 255, 0.06);
+      color: var(--text);
+      font: inherit;
+      /* 16px or more, or iPhones zoom in on the field. */
+      font-size: max(16px, 1rem);
+      resize: vertical;
+    }
+
+    .field input::placeholder,
+    .field textarea::placeholder { color: rgba(244, 246, 255, 0.4); }
+
+    .field small {
+      display: block;
+      margin-top: 0.4rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .who {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 480px) {
+      .who { grid-template-columns: 1fr; }
+    }
+
+    .who-known { color: var(--text-muted); }
+    .who-known b { color: var(--text); font-weight: 600; }
+
+    .pilot {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      cursor: pointer;
+    }
+
+    .pilot input {
+      flex: none;
+      width: 1.25rem;
+      height: 1.25rem;
+      margin: 0.15rem 0 0;
+      accent-color: var(--sola-blue);
+    }
+
+    .pilot small {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .error {
+      color: #ff9b9b;
+      font-weight: 600;
+    }
+
+    .error:empty { display: none; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1.25rem;
+    }
+
+    .actions .button {
+      margin-top: 0;
+      border: 0;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .link {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--signal);
+      font: inherit;
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+      cursor: pointer;
+    }
+
+    .done-mark {
+      display: grid;
+      place-items: center;
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      background: var(--sola-blue);
+      font-size: 1.6rem;
+      font-weight: 700;
+      animation: pop 0.5s var(--ease-out);
+    }
+
+    @keyframes pop {
+      from { scale: 0.4; opacity: 0; }
+    }
+
+    .done p { color: var(--text-muted); }
+
+    /* Booth: the ideas become a live leaderboard beside the headline. */
+    .present .slide {
+      grid-template-columns: minmax(0, 25rem) minmax(0, 1fr);
+      align-items: center;
+      gap: 3rem;
+    }
+
+    .present .vote,
+    .present .suggest,
+    .present .turnout { display: none; }
+
+    .present .live { display: block; }
+
+    .live { margin-top: 2.5rem; }
+
+    .counts {
+      display: flex;
+      gap: 2.5rem;
+      color: var(--text-muted);
+    }
+
+    .counts b {
+      display: block;
+      color: var(--text);
+      font-size: 3.5rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .scan {
+      margin-top: 1.5rem;
+      color: var(--signal);
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    .scan::after { content: "\00a0\2197"; }
+
+    .live.empty .counts { display: none; }
+    .live.empty .scan { margin-top: 0; }
+
+    .present .ideas {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      /* Keep clear of the QR code in the top right corner. */
+      margin-right: 5.5rem;
+    }
+
+    .present .idea {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 17rem;
+      align-items: center;
+      gap: 0.2rem 2rem;
+      padding: 1rem 1.5rem;
+    }
+
+    .present .idea h2 { margin: 0; font-size: 1.3rem; }
+    .present .idea p { font-size: 0.92rem; line-height: 1.4; }
+    .present .idea .badge { margin-left: 0.6rem; }
+
+    .present .meter {
+      display: flex;
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .meter i {
+      position: relative;
+      flex: 1;
+      height: 0.75rem;
+      border-radius: 0 4px 4px 0;
+      background: rgba(124, 157, 255, 0.12);
+    }
+
+    .meter i::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: calc(var(--share, 0) * 100%);
+      border-radius: 0 4px 4px 0;
+      background: var(--sola-blue);
+      transition: width 0.9s var(--ease-out);
+    }
+
+    .meter b {
+      min-width: 2.5ch;
+      font-size: 1.8rem;
+      font-weight: 600;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* No vote store yet (or no answer from it): the ideas, without numbers. */
+    .no-tally .meter,
+    .no-tally .counts,
+    .no-tally .turnout { display: none !important; }
+    .present .no-tally .idea { grid-template-columns: 1fr; }
+    .no-tally .live .scan { margin-top: 0; }
+
+    /* Before the first vote, a row of zeros would look like nobody cares. */
+    .no-votes .meter { visibility: hidden; }
+  </style>
 </head>
 <body>
   <header class="site-header">
     <a href="/"><img src="/assets/sola-logo-reverse.svg" alt="Sola Payments"></a>
   </header>
 
-  <main class="slide">
+  <main class="slide no-tally">
     <div>
       <p class="mark">What's next</p>
       <h1>What should we build next?</h1>
       <p class="lede">These are ideas we're exploring, not promises. Tell the product team which ones your merchants need.</p>
+      <p class="note turnout" aria-live="polite"></p>
+      <div class="live empty">
+        <div class="counts">
+          <p><b data-agents>0</b> agents voted</p>
+          <p><b data-offices>0</b> offices</p>
+        </div>
+        <p class="scan">Scan the code to vote from your phone</p>
+      </div>
     </div>
 
-    <div class="grid stagger grid--3">
-      <section class="card">
+    <div class="ideas grid stagger grid--3">
+      <section class="card idea" data-idea="clerk-pos">
         <h2>Clerk POS</h2>
         <p>A lightweight point of sale for desktop and tablet, with a catalog and inventory shared with Sola Collect.</p>
+        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
+        <button class="vote" type="button">My merchants need this</button>
       </section>
-      <section class="card">
+      <section class="card idea" data-idea="terminal">
         <h2>Standalone Sola Terminal</h2>
-        <p><strong>Basic:</strong> everyday transactions, like a traditional terminal.</p>
-        <p><strong>POS:</strong> catalog and inventory on the terminal itself, with no desktop or tablet needed.</p>
+        <p><strong>Basic</strong> for everyday transactions, like a traditional terminal, or <strong>POS</strong> with the catalog and inventory on the terminal itself.</p>
+        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
+        <button class="vote" type="button">My merchants need this</button>
       </section>
-      <section class="card">
+      <section class="card idea" data-idea="bnpl">
         <h2>Buy Now, Pay Later</h2>
         <p>Customers pay in installments. Merchants get funded right away, through a BNPL partner.</p>
+        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
+        <button class="vote" type="button">My merchants need this</button>
       </section>
-      <section class="card">
+      <section class="card idea" data-idea="cash-advance">
         <h2>Merchant Cash Advance</h2>
         <p>Funding for merchants, paid back over time, through a lending partner.</p>
+        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
+        <button class="vote" type="button">My merchants need this</button>
       </section>
-      <section class="card">
+      <section class="card idea" data-idea="checkout-templates">
         <h2>More Checkout templates</h2>
-        <p>Which industries should get a ready-made payment page next?</p>
+        <p>Ready-made payment pages for more industries. Which ones should come next?</p>
+        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
+        <button class="vote" type="button">My merchants need this</button>
       </section>
-      <section class="card">
+      <section class="card idea" data-idea="otc-cards">
         <h2>OTC benefits cards</h2>
         <p>Accept over-the-counter benefits cards at pharmacies, grocery stores, and convenience stores.</p>
+        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
+        <button class="vote" type="button">My merchants need this</button>
       </section>
+    </div>
+
+    <div class="suggest" data-idea="other">
+      <p class="note">Something else on your merchants' wish list?</p>
+      <button class="vote" type="button">Suggest an idea</button>
     </div>
   </main>
 
+  <dialog class="sheet" aria-labelledby="sheet-title">
+    <button class="close" type="button" aria-label="Close">&times;</button>
+    <form novalidate>
+      <div class="sheet-head">
+        <p class="mark" data-kicker></p>
+        <h2 id="sheet-title"></h2>
+      </div>
+
+      <label class="field" data-only="other">
+        <span>What should we build?</span>
+        <textarea name="text" rows="3" maxlength="300" placeholder="What do your merchants keep asking for?"></textarea>
+      </label>
+
+      <fieldset>
+        <legend data-size-legend></legend>
+        <div class="chips">
+          <label><input type="radio" name="size" value="few"><span>A few</span></label>
+          <label><input type="radio" name="size" value="dozens"><span>10 to 50</span></label>
+          <label><input type="radio" name="size" value="many"><span>More than 50</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span data-kinds-legend></span> <span class="optional">(optional)</span></legend>
+        <div class="chips">
+          <label><input type="checkbox" name="kinds" value="retail"><span>Retail</span></label>
+          <label><input type="checkbox" name="kinds" value="restaurant"><span>Restaurants</span></label>
+          <label><input type="checkbox" name="kinds" value="grocery"><span>Grocery</span></label>
+          <label><input type="checkbox" name="kinds" value="pharmacy"><span>Pharmacy</span></label>
+          <label><input type="checkbox" name="kinds" value="medical"><span>Medical</span></label>
+          <label><input type="checkbox" name="kinds" value="auto"><span>Auto</span></label>
+          <label><input type="checkbox" name="kinds" value="services"><span>Services</span></label>
+          <label><input type="checkbox" name="kinds" value="ecommerce"><span>Ecommerce</span></label>
+          <label><input type="checkbox" name="kinds" value="nonprofit"><span>Nonprofit</span></label>
+          <label><input type="checkbox" name="kinds" value="other"><span>Other</span></label>
+        </div>
+      </fieldset>
+
+      <label class="field" data-not="other">
+        <span>Why? <span class="optional">(optional)</span></span>
+        <textarea name="why" rows="3" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
+        <small>Leave out account numbers and card details.</small>
+      </label>
+
+      <label class="pilot">
+        <input type="checkbox" name="pilot">
+        <span>I'd bring merchants to a pilot<small>We'll reach out when there's one to try.</small></span>
+      </label>
+
+      <div class="who">
+        <label class="field"><span>Your name</span><input name="name" autocomplete="name" maxlength="80"></label>
+        <label class="field"><span>Office or ISO <span class="optional">(optional)</span></span><input name="office" autocomplete="organization" maxlength="80"></label>
+      </div>
+      <p class="who-known" hidden>Voting as <b data-who></b> <button class="link" type="button" data-change-who>Change</button></p>
+
+      <p class="error" role="alert"></p>
+
+      <div class="actions">
+        <button class="button" type="submit"></button>
+        <button class="link" type="button" data-remove hidden></button>
+      </div>
+    </form>
+
+    <div class="done" hidden>
+      <div class="done-mark" aria-hidden="true">&#10003;</div>
+      <div>
+        <h2 tabindex="-1" data-done-title></h2>
+        <p data-done-text></p>
+      </div>
+      <div class="actions"><button class="button" type="button" data-back>Back to the ideas</button></div>
+    </div>
+  </dialog>
+
   <nav class="page-nav" aria-label="Pages"></nav>
+
+  <script>
+    // Votes go to /api/vote/ (see api/vote.js). Each phone keeps its own id, name, and
+    // office, its votes (to show and edit them), and any vote still waiting to send.
+    const saved = {
+      get(key, fallback) {
+        try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+      },
+      set(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* private mode: this visit only */ }
+      },
+    };
+
+    const voter = saved.get('solacon2.voter', null) || {
+      id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2),
+      name: '',
+      office: '',
+    };
+    saved.set('solacon2.voter', voter);
+    const votes = saved.get('solacon2.votes', {});
+    const pending = saved.get('solacon2.pending', {});
+
+    // A 4xx means the vote itself is wrong, so it isn't retried; no answer or a 5xx is.
+    async function send(method, body) {
+      try {
+        const response = await fetch('/api/vote/', {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await response.json().catch(() => ({}));
+        return { ok: response.ok, retry: response.status >= 500, data };
+      } catch {
+        return { ok: false, retry: true, data: {} };
+      }
+    }
+
+    // Sends everything waiting, and returns how it went for one idea when asked.
+    async function flush(idea) {
+      let mine;
+      for (const [id, job] of Object.entries(pending)) {
+        const result = await send(job.method, job.body);
+        if (result.ok || !result.retry) delete pending[id];
+        if (result.ok) showTally(result.data);
+        if (id === idea) mine = result;
+      }
+      saved.set('solacon2.pending', pending);
+      return mine;
+    }
+
+    function paint() {
+      document.querySelectorAll('[data-idea]').forEach(el => {
+        const button = el.querySelector('.vote');
+        const voted = Boolean(votes[el.dataset.idea]);
+        button.classList.toggle('voted', voted);
+        if (el.dataset.idea === 'other') button.textContent = voted ? 'Your idea is in · Edit' : 'Suggest an idea';
+        else button.textContent = voted ? 'Voted · Edit' : 'My merchants need this';
+      });
+    }
+
+    // The vote sheet
+    const sheet = document.querySelector('.sheet');
+    const form = sheet.querySelector('form');
+    const field = name => form.elements.namedItem(name);
+    const done = sheet.querySelector('.done');
+    const error = form.querySelector('.error');
+    let openIdea = null;
+
+    function showWho(known) {
+      form.querySelector('.who').hidden = known;
+      form.querySelector('.who-known').hidden = !known;
+      form.querySelector('[data-who]').textContent = voter.office ? `${voter.name} · ${voter.office}` : voter.name;
+    }
+
+    function openSheet(idea) {
+      openIdea = idea;
+      const other = idea === 'other';
+      const ballot = votes[idea];
+      form.reset();
+      error.textContent = '';
+      form.hidden = false;
+      done.hidden = true;
+
+      sheet.querySelector('[data-kicker]').textContent = other ? 'Something else' : document.querySelector(`.idea[data-idea="${idea}"] h2`).firstChild.textContent;
+      sheet.querySelector('#sheet-title').textContent = other ? 'What should we build?' : 'Tell us about your merchants';
+      form.querySelector('[data-size-legend]').textContent = `How many of your merchants ${other ? 'would' : 'could'} use it?`;
+      form.querySelector('[data-kinds-legend]').textContent = idea === 'checkout-templates' ? 'Which industries need a template?' : 'What kind of merchants?';
+      form.querySelectorAll('[data-only="other"]').forEach(el => { el.hidden = !other; });
+      form.querySelectorAll('[data-not="other"]').forEach(el => { el.hidden = other; });
+      form.querySelector('[type="submit"]').textContent = `${ballot ? 'Update' : other ? 'Send' : 'Count'} my ${other ? 'idea' : 'vote'}`;
+      form.querySelector('[data-remove]').hidden = !ballot;
+      form.querySelector('[data-remove]').textContent = `Remove my ${other ? 'idea' : 'vote'}`;
+
+      if (ballot) {
+        field('text').value = ballot.text;
+        field('why').value = ballot.why;
+        field('pilot').checked = ballot.pilot;
+        form.querySelectorAll('[name="size"]').forEach(input => { input.checked = input.value === ballot.size; });
+        form.querySelectorAll('[name="kinds"]').forEach(input => { input.checked = ballot.kinds.includes(input.value); });
+      }
+      field('name').value = voter.name;
+      field('office').value = voter.office;
+      showWho(Boolean(voter.name));
+
+      sheet.showModal();
+    }
+
+    function finish(title, text) {
+      sheet.querySelector('[data-done-title]').textContent = title;
+      sheet.querySelector('[data-done-text]').textContent = text;
+      form.hidden = true;
+      done.hidden = false;
+      sheet.querySelector('[data-done-title]').focus();
+    }
+
+    function agreeLine(idea, tally) {
+      if (idea === 'other') return 'The product team reads every one.';
+      const others = (tally.ideas?.[idea] || 1) - 1;
+      if (others < 1) return "You're the first agent to ask for this one.";
+      return `You and ${others.toLocaleString()} other agent${others === 1 ? '' : 's'} want this.`;
+    }
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const idea = openIdea;
+      const other = idea === 'other';
+      const size = form.querySelector('[name="size"]:checked')?.value || null;
+      const name = field('name').value.trim();
+      const office = field('office').value.trim();
+      const text = field('text').value.trim();
+
+      const problem =
+        (other && !text && [field('text'), 'Tell us what to build.']) ||
+        (!other && !size && [form.querySelector('[name="size"]'), 'Pick how many of your merchants could use it.']) ||
+        (!name && [field('name'), 'Add your name.']);
+      if (problem) {
+        if (problem[0].closest('.who')) showWho(false);
+        error.textContent = problem[1];
+        problem[0].focus();
+        return;
+      }
+
+      Object.assign(voter, { name, office });
+      saved.set('solacon2.voter', voter);
+      const ballot = {
+        voter: voter.id,
+        idea,
+        size,
+        kinds: [...form.querySelectorAll('[name="kinds"]:checked')].map(input => input.value),
+        why: other ? '' : field('why').value.trim(),
+        text: other ? text : '',
+        pilot: field('pilot').checked,
+        name,
+        office,
+      };
+
+      const submit = form.querySelector('[type="submit"]');
+      submit.disabled = true;
+      pending[idea] = { method: 'POST', body: ballot };
+      saved.set('solacon2.pending', pending);
+      const result = await flush(idea);
+      submit.disabled = false;
+
+      if (result && !result.ok && !result.retry) {
+        error.textContent = result.data.error || "That didn't go through. Check the form and try again.";
+        return;
+      }
+      votes[idea] = ballot;
+      saved.set('solacon2.votes', votes);
+      paint();
+      if (result?.ok) finish(other ? 'Got it. Thank you.' : 'Counted. Thank you.', agreeLine(idea, result.data));
+      else finish('Saved on your phone', "No connection right now. It'll send on its own when you're back online.");
+    });
+
+    form.querySelector('[data-remove]').addEventListener('click', () => {
+      const idea = openIdea;
+      delete votes[idea];
+      saved.set('solacon2.votes', votes);
+      pending[idea] = { method: 'DELETE', body: { voter: voter.id, idea } };
+      saved.set('solacon2.pending', pending);
+      paint();
+      sheet.close();
+      flush();
+    });
+
+    form.addEventListener('input', () => { error.textContent = ''; });
+    form.querySelector('[data-change-who]').addEventListener('click', () => {
+      showWho(false);
+      field('name').focus();
+    });
+    sheet.querySelector('.close').addEventListener('click', () => sheet.close());
+    sheet.querySelector('[data-back]').addEventListener('click', () => sheet.close());
+    sheet.addEventListener('click', e => { if (e.target === sheet) sheet.close(); });
+
+    document.querySelectorAll('[data-idea]').forEach(el => {
+      el.querySelector('.vote').addEventListener('click', () => openSheet(el.dataset.idea));
+    });
+
+    // The tally: turnout under the intro on phones. On the booth, a meter on each idea,
+    // the ideas ranked by votes, and the leader marked.
+    const main = document.querySelector('main');
+    const ideasList = document.querySelector('.ideas');
+    const live = document.querySelector('.live');
+
+    function showTally(tally) {
+      if (!tally || !tally.ideas) return;
+      const { agents, offices } = tally;
+      const plural = (n, word) => `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`;
+      main.classList.remove('no-tally');
+      main.classList.toggle('no-votes', !agents);
+      document.querySelector('.turnout').textContent = agents ? `${plural(agents, 'agent')} ${agents === 1 ? 'has' : 'have'} voted so far.` : '';
+      live.classList.toggle('empty', !agents);
+      live.querySelector('[data-agents]').textContent = agents.toLocaleString();
+      live.querySelector('[data-offices]').textContent = offices.toLocaleString();
+      live.querySelector('.scan').textContent = agents ? 'Scan the code to vote from your phone' : 'Be the first: scan the code to vote';
+      if (SOLA_PRESENTING) rank(tally.ideas);
+    }
+
+    function rank(counts) {
+      const count = card => counts[card.dataset.idea] || 0;
+      const cards = [...ideasList.children];
+      const before = new Map(cards.map(card => [card, card.getBoundingClientRect().top]));
+      const most = Math.max(1, ...cards.map(count));
+      const order = [...cards].sort((a, b) => count(b) - count(a));
+      order.forEach((card, i) => {
+        card.style.order = i;
+        card.querySelector('.meter i').style.setProperty('--share', count(card) / most);
+        card.querySelector('.meter b').textContent = count(card).toLocaleString();
+        const leads = i === 0 && count(card) > 0 && count(card) > count(order[1]);
+        const badge = card.querySelector('h2 .badge');
+        if (leads && !badge) card.querySelector('h2').insertAdjacentHTML('beforeend', '<span class="badge">Most wanted</span>');
+        if (!leads && badge) badge.remove();
+      });
+      // Glide each idea from its old place to its new one.
+      cards.forEach(card => {
+        const shift = before.get(card) - card.getBoundingClientRect().top;
+        if (shift) card.animate([{ translate: `0 ${shift}px` }, { translate: '0 0' }], { duration: 700, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+      });
+    }
+
+    async function refresh() {
+      try {
+        const response = await fetch('/api/tally/', { cache: 'no-store' });
+        if (!response.ok) throw new Error(response.status);
+        showTally(await response.json());
+      } catch {
+        main.classList.add('no-tally');
+      }
+    }
+
+    paint();
+    flush().then(refresh);
+    window.addEventListener('online', () => flush());
+
+    // The booth polls while this slide is on screen.
+    if (SOLA_PRESENTING) {
+      let showing = window.parent === window;
+      setInterval(() => { if (showing) refresh(); }, 5000);
+      window.addEventListener('message', e => {
+        if (e.origin !== location.origin) return;
+        if (e.data.type === 'enter') { showing = true; sheet.close(); refresh(); }
+        if (e.data.type === 'leave') showing = false;
+      });
+    }
+  </script>
 </body>
 </html>
