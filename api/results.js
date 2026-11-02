@@ -1,4 +1,4 @@
-// GET /api/results/   every vote, for the product team.
+// GET /api/results/   every ranking, for the product team.
 // Send the RESULTS_KEY from the Vercel project's environment as "Authorization: Bearer <key>".
 
 const { ballots, tally, sameSecret, fail } = require('./_store');

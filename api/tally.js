@@ -1,4 +1,5 @@
-// GET /api/tally/   votes per idea, plus agent and office counts, for the booth screen.
+// GET /api/tally/   points per idea and how often it placed 1st, 2nd, and 3rd, plus agent
+// and office counts, for the booth screen.
 // Names and comments stay out of it; those are on the results page only.
 
 const { ballots, tally, fail } = require('./_store');

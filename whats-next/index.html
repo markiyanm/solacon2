@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>What's next | SolaCon 2</title>
-  <meta name="description" content="Product ideas Sola is exploring. Vote for the ones your merchants need.">
+  <meta name="description" content="Product ideas Sola is exploring. Rank the ones your merchants need most.">
   <meta name="theme-color" content="#010623">
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
@@ -13,11 +13,14 @@
     .idea {
       display: flex;
       flex-direction: column;
+      transition: border-color 0.25s, box-shadow 0.25s;
     }
 
     .idea p { flex: 1; }
 
-    .vote {
+    /* The whole card is the button: tap to pick it, tap again to take it out. No numbers
+       yet: the agent puts their picks in order as its own step, in the sheet. */
+    .pick {
       align-self: flex-start;
       margin-top: 1.25rem;
       padding: 0.6em 1.2em;
@@ -33,26 +36,112 @@
       transition: background-color 0.2s, box-shadow 0.2s;
     }
 
-    .vote:hover { background: rgba(124, 157, 255, 0.12); }
+    .pick::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 1.25rem;
+    }
 
-    .vote.voted {
+    .idea:hover .pick { background: rgba(124, 157, 255, 0.12); }
+
+    .idea.picked {
+      border-color: var(--sola-blue);
+      box-shadow: inset 0 0 0 1px var(--sola-blue);
+    }
+
+    .idea.picked .pick {
       background: var(--sola-blue);
       box-shadow: inset 0 0 0 1.5px var(--sola-blue);
     }
 
-    .vote.voted::before { content: "\2713\00a0 "; }
+    .full .idea:not(.picked) .pick { color: var(--text-muted); }
 
     .suggest {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem 1.25rem;
+      border-style: dashed;
+      background: transparent;
     }
-
-    .suggest .vote { margin-top: 0; }
 
     .turnout { margin-top: 1rem; }
     .turnout:empty { display: none; }
+
+    /* Your picks so far, pinned to the bottom of the screen from the first pick on: a small
+       floating pill, or a slim bar along the bottom of a phone. */
+    .tray {
+      position: sticky;
+      bottom: 1.25rem;
+      z-index: 2;
+      justify-self: center;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      width: min(100%, 30rem);
+      /* Or a long line of picks would stretch the page sideways. */
+      min-width: 0;
+      padding: 0.55rem 0.55rem 0.55rem 1.5rem;
+      background: rgba(10, 18, 56, 0.88);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      box-shadow: 0 1rem 2.5rem rgba(1, 6, 35, 0.7);
+      animation: tray-in 0.45s var(--ease-out);
+    }
+
+    .tray[hidden] { display: none; }
+
+    @keyframes tray-in {
+      from { opacity: 0; translate: 0 1.5rem; }
+    }
+
+    @media (max-width: 700px) {
+      .tray {
+        bottom: 0;
+        justify-self: stretch;
+        width: auto;
+        margin: 0 calc(var(--gutter) * -1) -2rem;
+        padding: 0.75rem var(--gutter) calc(0.75rem + env(safe-area-inset-bottom));
+        border-width: 1px 0 0;
+        border-radius: 1.25rem 1.25rem 0 0;
+      }
+    }
+
+    .tray-text {
+      flex: 1;
+      min-width: 0;
+      line-height: 1.35;
+    }
+
+    .tray-count { font-weight: 600; }
+
+    .tray-note {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .tray-note:empty { display: none; }
+    .tray-note.bad { color: #ff9b9b; font-weight: 600; }
+
+    .tray .button {
+      flex: none;
+      margin-top: 0;
+      border: 0;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .num {
+      flex: none;
+      display: grid;
+      place-items: center;
+      width: 1.7rem;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--sola-blue);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
 
     /* Booth only: the live count, the scan prompt, and a meter on each idea. */
     .live,
@@ -103,6 +192,12 @@
 
     .sheet [hidden] { display: none; }
 
+    /* Two steps in one form: put the picks in order, then a little about the agent. */
+    .sheet [data-step]:not([hidden]) {
+      display: grid;
+      gap: 1.4rem;
+    }
+
     .sheet-head { padding-right: 2.5rem; }
 
     .sheet h2 {
@@ -111,6 +206,13 @@
       letter-spacing: -0.02em;
       line-height: 1.15;
     }
+
+    .sheet-sub {
+      margin-top: 0.5rem;
+      color: var(--text-muted);
+    }
+
+    .sheet-sub:empty { display: none; }
 
     .close {
       position: absolute;
@@ -223,6 +325,83 @@
       .who { grid-template-columns: 1fr; }
     }
 
+    .order {
+      list-style: none;
+      padding: 0;
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .order li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 0.6rem 0.7rem 0.9rem;
+      border-radius: 0.9rem;
+      background: rgba(244, 246, 255, 0.06);
+      font-size: 1.05rem;
+      font-weight: 600;
+    }
+
+    .order .num {
+      width: 2.1rem;
+      font-size: 1rem;
+    }
+
+    .order li > span:not(.num) { flex: 1; min-width: 0; }
+
+    .step {
+      flex: none;
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(244, 246, 255, 0.1);
+      color: var(--text);
+      font: inherit;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .step:hover { background: rgba(244, 246, 255, 0.2); }
+    .step:disabled { visibility: hidden; }
+
+    .order-note {
+      margin-top: -0.6rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* Step 2: the order they chose, small, with a way back. */
+    .summary {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      padding-bottom: 1.2rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .summary ol {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1rem;
+      font-weight: 600;
+    }
+
+    .summary li {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .summary .num {
+      width: 1.5rem;
+      font-size: 0.8rem;
+    }
+
     .who-known { color: var(--text-muted); }
     .who-known b { color: var(--text); font-weight: 600; }
 
@@ -305,8 +484,9 @@
       gap: 3rem;
     }
 
-    .present .vote,
-    .present .suggest,
+    .present .pick,
+    .present .idea.suggest,
+    .present .tray,
     .present .turnout { display: none; }
 
     .present .live { display: block; }
@@ -338,7 +518,8 @@
 
     .scan::after { content: "\00a0\2197"; }
 
-    .live.empty .counts { display: none; }
+    .live.empty .counts,
+    .live.empty .key { display: none; }
     .live.empty .scan { margin-top: 0; }
 
     .present .ideas {
@@ -369,22 +550,47 @@
       gap: 1rem;
     }
 
-    .meter i {
-      position: relative;
-      flex: 1;
+    .meter i { flex: 1; }
+
+    /* Points from #1 picks, then #2, then #3, brightest first. */
+    .meter i > span {
+      display: flex;
+      gap: 2px;
+      width: calc(var(--share, 0) * 100%);
       height: 0.75rem;
+      overflow: hidden;
       border-radius: 0 4px 4px 0;
-      background: rgba(124, 157, 255, 0.12);
+      transition: width 0.9s var(--ease-out);
     }
 
-    .meter i::before {
-      content: "";
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: calc(var(--share, 0) * 100%);
-      border-radius: 0 4px 4px 0;
-      background: var(--sola-blue);
-      transition: width 0.9s var(--ease-out);
+    .meter i span span {
+      flex: var(--part, 0) 1 0;
+      min-width: 0;
+      transition: flex-grow 0.9s var(--ease-out);
+    }
+
+    .meter i span span[hidden] { display: none; }
+
+    .p1 { background: #b3c6ff; }
+    .p2 { background: #4f7bff; }
+    .p3 { background: #2b4596; }
+
+    .key {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem 1.5rem;
+      margin-top: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .key i {
+      display: inline-block;
+      width: 0.85rem;
+      height: 0.85rem;
+      margin-right: 0.45rem;
+      border-radius: 3px;
+      vertical-align: -0.1em;
     }
 
     .meter b {
@@ -398,12 +604,14 @@
     /* No vote store yet (or no answer from it): the ideas, without numbers. */
     .no-tally .meter,
     .no-tally .counts,
+    .no-tally .key,
     .no-tally .turnout { display: none !important; }
     .present .no-tally .idea { grid-template-columns: 1fr; }
     .no-tally .live .scan { margin-top: 0; }
 
     /* Before the first vote, a row of zeros would look like nobody cares. */
-    .no-votes .meter { visibility: hidden; }
+    .no-votes .meter,
+    .no-votes .key { visibility: hidden; }
   </style>
 </head>
 <body>
@@ -415,60 +623,70 @@
     <div>
       <p class="mark">What's next</p>
       <h1>What should we build next?</h1>
-      <p class="lede">These are ideas we're exploring, not promises. Tell the product team which ones your merchants need.</p>
+      <p class="lede">These are ideas we're exploring, not promises. Pick up to three your merchants need most, then put them in order.</p>
       <p class="note turnout" aria-live="polite"></p>
       <div class="live empty">
         <div class="counts">
-          <p><b data-agents>0</b> agents voted</p>
+          <p><b data-agents>0</b> agents ranked</p>
           <p><b data-offices>0</b> offices</p>
         </div>
-        <p class="scan">Scan the code to vote from your phone</p>
+        <p class="key"><span><i class="p1"></i>#1 pick: 3 points</span><span><i class="p2"></i>#2: 2</span><span><i class="p3"></i>#3: 1</span></p>
+        <p class="scan">Scan the code to rank them from your phone</p>
       </div>
     </div>
 
     <div class="ideas grid stagger grid--3">
-      <section class="card idea" data-idea="clerk-pos">
+      <section class="card idea" data-idea="clerk-pos" data-short="Clerk POS">
         <h2>Clerk POS</h2>
         <p>A lightweight point of sale for desktop and tablet, with a catalog and inventory shared with Sola Collect.</p>
-        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
-        <button class="vote" type="button">My merchants need this</button>
+        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
       </section>
-      <section class="card idea" data-idea="terminal">
+      <section class="card idea" data-idea="terminal" data-short="Terminal">
         <h2>Standalone Sola Terminal</h2>
         <p><strong>Basic</strong> for everyday transactions, like a traditional terminal, or <strong>POS</strong> with the catalog and inventory on the terminal itself.</p>
-        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
-        <button class="vote" type="button">My merchants need this</button>
+        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
       </section>
-      <section class="card idea" data-idea="bnpl">
+      <section class="card idea" data-idea="bnpl" data-short="BNPL">
         <h2>Buy Now, Pay Later</h2>
         <p>Customers pay in installments. Merchants get funded right away, through a BNPL partner.</p>
-        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
-        <button class="vote" type="button">My merchants need this</button>
+        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
       </section>
-      <section class="card idea" data-idea="cash-advance">
+      <section class="card idea" data-idea="cash-advance" data-short="Cash advance">
         <h2>Merchant Cash Advance</h2>
         <p>Funding for merchants, paid back over time, through a lending partner.</p>
-        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
-        <button class="vote" type="button">My merchants need this</button>
+        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
       </section>
-      <section class="card idea" data-idea="checkout-templates">
+      <section class="card idea" data-idea="checkout-templates" data-short="Templates">
         <h2>More Checkout templates</h2>
         <p>Ready-made payment pages for more industries. Which ones should come next?</p>
-        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
-        <button class="vote" type="button">My merchants need this</button>
+        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
       </section>
-      <section class="card idea" data-idea="otc-cards">
+      <section class="card idea" data-idea="otc-cards" data-short="OTC cards">
         <h2>OTC benefits cards</h2>
         <p>Accept over-the-counter benefits cards at pharmacies, grocery stores, and convenience stores.</p>
-        <div class="meter" aria-hidden="true"><i></i><b>0</b></div>
-        <button class="vote" type="button">My merchants need this</button>
+        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
       </section>
     </div>
 
-    <div class="suggest" data-idea="other">
-      <p class="note">Something else on your merchants' wish list?</p>
-      <button class="vote" type="button">Suggest an idea</button>
-    </div>
+    <section class="card idea suggest" data-idea="other" data-short="Your idea">
+      <h2>Something else?</h2>
+      <p>Something your merchants keep asking for that isn't here. You'll describe it after you put your picks in order.</p>
+      <button class="pick" type="button" aria-pressed="false">Add your own idea</button>
+    </section>
+
+    <aside class="tray" aria-label="Your picks" hidden>
+      <div class="tray-text" aria-live="polite">
+        <p class="tray-count"></p>
+        <p class="tray-note"></p>
+      </div>
+      <button class="button" type="button" data-next>Next</button>
+    </aside>
   </main>
 
   <dialog class="sheet" aria-labelledby="sheet-title">
@@ -476,61 +694,83 @@
     <form novalidate>
       <div class="sheet-head">
         <p class="mark" data-kicker></p>
-        <h2 id="sheet-title"></h2>
+        <h2 id="sheet-title" tabindex="-1"></h2>
+        <p class="sheet-sub" data-sub></p>
       </div>
 
-      <label class="field" data-only="other">
-        <span>What should we build?</span>
-        <textarea name="text" rows="3" maxlength="300" placeholder="What do your merchants keep asking for?"></textarea>
-      </label>
-
-      <fieldset>
-        <legend data-size-legend></legend>
-        <div class="chips">
-          <label><input type="radio" name="size" value="few"><span>A few</span></label>
-          <label><input type="radio" name="size" value="dozens"><span>10 to 50</span></label>
-          <label><input type="radio" name="size" value="many"><span>More than 50</span></label>
+      <div data-step="order">
+        <ol class="order" aria-label="Your picks, in order"></ol>
+        <p class="order-note">Use the arrows to move them.</p>
+        <div class="actions">
+          <button class="button" type="button" data-to="about">Next</button>
+          <button class="link" type="button" data-change-picks></button>
         </div>
-      </fieldset>
-
-      <fieldset>
-        <legend><span data-kinds-legend></span> <span class="optional">(optional)</span></legend>
-        <div class="chips">
-          <label><input type="checkbox" name="kinds" value="retail"><span>Retail</span></label>
-          <label><input type="checkbox" name="kinds" value="restaurant"><span>Restaurants</span></label>
-          <label><input type="checkbox" name="kinds" value="grocery"><span>Grocery</span></label>
-          <label><input type="checkbox" name="kinds" value="pharmacy"><span>Pharmacy</span></label>
-          <label><input type="checkbox" name="kinds" value="medical"><span>Medical</span></label>
-          <label><input type="checkbox" name="kinds" value="auto"><span>Auto</span></label>
-          <label><input type="checkbox" name="kinds" value="services"><span>Services</span></label>
-          <label><input type="checkbox" name="kinds" value="ecommerce"><span>Ecommerce</span></label>
-          <label><input type="checkbox" name="kinds" value="nonprofit"><span>Nonprofit</span></label>
-          <label><input type="checkbox" name="kinds" value="other"><span>Other</span></label>
-        </div>
-      </fieldset>
-
-      <label class="field" data-not="other">
-        <span>Why? <span class="optional">(optional)</span></span>
-        <textarea name="why" rows="3" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
-        <small>Leave out account numbers and card details.</small>
-      </label>
-
-      <label class="pilot">
-        <input type="checkbox" name="pilot">
-        <span>I'd bring merchants to a pilot<small>We'll reach out when there's one to try.</small></span>
-      </label>
-
-      <div class="who">
-        <label class="field"><span>Your name</span><input name="name" autocomplete="name" maxlength="80"></label>
-        <label class="field"><span>Office or ISO <span class="optional">(optional)</span></span><input name="office" autocomplete="organization" maxlength="80"></label>
       </div>
-      <p class="who-known" hidden>Voting as <b data-who></b> <button class="link" type="button" data-change-who>Change</button></p>
 
-      <p class="error" role="alert"></p>
+      <div data-step="about" hidden>
+        <div class="summary">
+          <ol aria-label="Your ranking"></ol>
+          <button class="link" type="button" data-to="order"></button>
+        </div>
 
-      <div class="actions">
-        <button class="button" type="submit"></button>
-        <button class="link" type="button" data-remove hidden></button>
+        <label class="field" data-if="other">
+          <span>Your idea: what should we build?</span>
+          <textarea name="text" rows="3" maxlength="300" placeholder="What do your merchants keep asking for?"></textarea>
+        </label>
+
+        <label class="field">
+          <span><span data-why></span> <span class="optional">(optional)</span></span>
+          <textarea name="why" rows="3" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
+          <small>Leave out account numbers and card details.</small>
+        </label>
+
+        <fieldset>
+          <legend>How many merchants do you work with?</legend>
+          <div class="chips">
+            <label><input type="radio" name="size" value="few"><span>Fewer than 10</span></label>
+            <label><input type="radio" name="size" value="dozens"><span>10 to 50</span></label>
+            <label><input type="radio" name="size" value="many"><span>More than 50</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>What kinds? <span class="optional">(optional)</span></legend>
+          <div class="chips" data-kinds>
+            <label><input type="checkbox" name="kinds" value="retail"><span>Retail</span></label>
+            <label><input type="checkbox" name="kinds" value="restaurant"><span>Restaurants</span></label>
+            <label><input type="checkbox" name="kinds" value="grocery"><span>Grocery</span></label>
+            <label><input type="checkbox" name="kinds" value="pharmacy"><span>Pharmacy</span></label>
+            <label><input type="checkbox" name="kinds" value="medical"><span>Medical</span></label>
+            <label><input type="checkbox" name="kinds" value="auto"><span>Auto</span></label>
+            <label><input type="checkbox" name="kinds" value="services"><span>Services</span></label>
+            <label><input type="checkbox" name="kinds" value="ecommerce"><span>Ecommerce</span></label>
+            <label><input type="checkbox" name="kinds" value="nonprofit"><span>Nonprofit</span></label>
+            <label><input type="checkbox" name="kinds" value="other"><span>Other</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset data-if="checkout-templates">
+          <legend>Which industries need a Checkout template? <span class="optional">(optional)</span></legend>
+          <div class="chips" data-industries></div>
+        </fieldset>
+
+        <label class="pilot">
+          <input type="checkbox" name="pilot">
+          <span>I'd bring merchants to a pilot of my #1<small>We'll reach out when there's one to try.</small></span>
+        </label>
+
+        <div class="who">
+          <label class="field"><span>Your name</span><input name="name" autocomplete="name" maxlength="80"></label>
+          <label class="field"><span>Office or ISO <span class="optional">(optional)</span></span><input name="office" autocomplete="organization" maxlength="80"></label>
+        </div>
+        <p class="who-known" hidden>Ranking as <b data-who></b> <button class="link" type="button" data-change-who>Change</button></p>
+
+        <p class="error" role="alert"></p>
+
+        <div class="actions">
+          <button class="button" type="submit"></button>
+          <button class="link" type="button" data-remove hidden>Remove my ranking</button>
+        </div>
       </div>
     </form>
 
@@ -547,8 +787,10 @@
   <nav class="page-nav" aria-label="Pages"></nav>
 
   <script>
-    // Votes go to /api/vote/ (see api/vote.js). Each phone keeps its own id, name, and
-    // office, its votes (to show and edit them), and any vote still waiting to send.
+    // Each agent sends one ranking to /api/vote/ (see api/vote.js): up to three ideas, in
+    // order. The phone keeps its own id, name, and office, the ranking it last sent, the
+    // picks it's working on, and a ranking still waiting to send.
+    const PLACES = 3;
     const saved = {
       get(key, fallback) {
         try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
@@ -564,10 +806,11 @@
       office: '',
     };
     saved.set('solacon2.voter', voter);
-    const votes = saved.get('solacon2.votes', {});
-    const pending = saved.get('solacon2.pending', {});
+    let ballot = saved.get('solacon2.ranking', null);
+    let pending = saved.get('solacon2.pending-ranking', null);
+    let picks = saved.get('solacon2.picks', null) || (ballot ? [...ballot.ranking] : []);
 
-    // A 4xx means the vote itself is wrong, so it isn't retried; no answer or a 5xx is.
+    // A 4xx means the ranking itself is wrong, so it isn't retried; no answer or a 5xx is.
     async function send(method, body) {
       try {
         const response = await fetch('/api/vote/', {
@@ -582,36 +825,89 @@
       }
     }
 
-    // Sends everything waiting, and returns how it went for one idea when asked.
-    async function flush(idea) {
-      let mine;
-      for (const [id, job] of Object.entries(pending)) {
-        const result = await send(job.method, job.body);
-        if (result.ok || !result.retry) delete pending[id];
-        if (result.ok) showTally(result.data);
-        if (id === idea) mine = result;
+    // Sends the ranking waiting to go, if there is one, and returns how it went.
+    async function flush() {
+      if (!pending) return null;
+      const job = pending;
+      const result = await send(job.method, job.body);
+      // Only clear it if a newer ranking didn't replace it while this one was sending.
+      if (pending === job && (result.ok || !result.retry)) {
+        pending = null;
+        saved.set('solacon2.pending-ranking', null);
       }
-      saved.set('solacon2.pending', pending);
-      return mine;
+      if (result.ok) showTally(result.data);
+      return result;
+    }
+
+    const main = document.querySelector('main');
+    const cards = [...document.querySelectorAll('.idea[data-idea]')];
+    const card = id => cards.find(c => c.dataset.idea === id);
+    const title = id => card(id).querySelector('h2').firstChild.textContent;
+    const short = id => card(id).dataset.short;
+    const same = (a, b) => a.length === b.length && a.every((id, i) => id === b[i]);
+    const sameSet = (a, b) => a.length === b.length && a.every(id => b.includes(id));
+
+    // Tapping a card picks it or takes it out. Picks keep the order they were tapped in,
+    // but the cards don't show it: the agent sets the order in the sheet.
+    const tray = document.querySelector('.tray');
+    const trayCount = tray.querySelector('.tray-count');
+    const trayNote = tray.querySelector('.tray-note');
+
+    // The tray's second line: the picks so far, or what went wrong.
+    function note(text, bad) {
+      trayNote.textContent = text;
+      trayNote.classList.toggle('bad', Boolean(bad));
     }
 
     function paint() {
-      document.querySelectorAll('[data-idea]').forEach(el => {
-        const button = el.querySelector('.vote');
-        const voted = Boolean(votes[el.dataset.idea]);
-        button.classList.toggle('voted', voted);
-        if (el.dataset.idea === 'other') button.textContent = voted ? 'Your idea is in · Edit' : 'Suggest an idea';
-        else button.textContent = voted ? 'Voted · Edit' : 'My merchants need this';
+      saved.set('solacon2.picks', picks);
+      const full = picks.length >= PLACES;
+      main.classList.toggle('full', full);
+      cards.forEach(c => {
+        const picked = picks.includes(c.dataset.idea);
+        const button = c.querySelector('.pick');
+        c.classList.toggle('picked', picked);
+        button.setAttribute('aria-pressed', picked);
+        button.textContent = picked ? '✓ Picked' : full ? "You've picked 3" : c.dataset.idea === 'other' ? 'Add your own idea' : 'Add to my picks';
+        button.setAttribute('aria-label', `${title(c.dataset.idea)}: ${picked ? 'picked. Tap to take it out.' : 'add to your picks'}`);
       });
+      // The intro says what to do, so the tray waits for the first pick.
+      const sent = ballot && same(picks, ballot.ranking);
+      tray.hidden = !picks.length && !ballot;
+      tray.querySelector('[data-next]').textContent = sent ? 'Edit' : 'Next';
+      trayCount.textContent =
+        sent ? 'Your ranking is in. Thank you.' :
+        !picks.length ? 'Pick again, then send it to update.' :
+        ballot && sameSet(picks, ballot.ranking) ? "Your new order isn't sent yet." :
+        `${picks.length} of ${PLACES} picked`;
+      note(picks.map(short).join(' · '));
     }
 
-    // The vote sheet
+    function toggle(id) {
+      const at = picks.indexOf(id);
+      if (at >= 0) picks.splice(at, 1);
+      else if (picks.length >= PLACES) return note("That's three. Tap one of them to take it out first.", true);
+      else picks.push(id);
+      // Back to the ideas they sent: bring back the order they sent them in, too.
+      if (ballot && sameSet(picks, ballot.ranking)) picks = [...ballot.ranking];
+      paint();
+    }
+
+    cards.forEach(c => c.querySelector('.pick').addEventListener('click', () => toggle(c.dataset.idea)));
+
+    // The sheet, in two steps: put the picks in order, then why, and a little about the
+    // agent and their merchants.
     const sheet = document.querySelector('.sheet');
     const form = sheet.querySelector('form');
     const field = name => form.elements.namedItem(name);
+    const checked = name => [...form.querySelectorAll(`[name="${name}"]:checked`)].map(input => input.value);
     const done = sheet.querySelector('.done');
     const error = form.querySelector('.error');
-    let openIdea = null;
+    const order = form.querySelector('.order');
+    const calm = matchMedia('(prefers-reduced-motion: reduce)');
+
+    // Template industries use the same list as merchant kinds.
+    form.querySelector('[data-industries]').innerHTML = form.querySelector('[data-kinds]').innerHTML.replaceAll('name="kinds"', 'name="industries"');
 
     function showWho(known) {
       form.querySelector('.who').hidden = known;
@@ -619,66 +915,121 @@
       form.querySelector('[data-who]').textContent = voter.office ? `${voter.name} · ${voter.office}` : voter.name;
     }
 
-    function openSheet(idea) {
-      openIdea = idea;
-      const other = idea === 'other';
-      const ballot = votes[idea];
+    // Step 1 asks only for the order. With one pick there's nothing to order, so it nudges
+    // for more instead: two or three ranked against each other tell us more.
+    const STEPS = {
+      order: () => picks.length > 1
+        ? ['Step 1 of 2', 'Now put them in order', 'Top is what your merchants need most.']
+        : ['Step 1 of 2', 'Just one pick?', 'Ranking two or three against each other tells us more about what to build first.'],
+      about: () => ['Step 2 of 2', picks.length > 1 ? 'Why these products?' : 'Why this product?', ''],
+    };
+
+    function showStep(step) {
+      const [kicker, heading, sub] = STEPS[step]();
+      sheet.querySelector('[data-kicker]').textContent = kicker;
+      sheet.querySelector('#sheet-title').textContent = heading;
+      sheet.querySelector('[data-sub]').textContent = sub;
+      form.querySelectorAll('[data-step]').forEach(el => { el.hidden = el.dataset.step !== step; });
+      sheet.scrollTop = 0;
+    }
+
+    function showOrder() {
+      order.innerHTML = picks.map((id, i) => `
+        <li data-id="${id}">
+          <span class="num">${i + 1}</span>
+          <span>${title(id)}</span>
+          <button class="step" type="button" data-move="-1" aria-label="Move ${title(id)} up"${i ? '' : ' disabled'}>&uarr;</button>
+          <button class="step" type="button" data-move="1" aria-label="Move ${title(id)} down"${i < picks.length - 1 ? '' : ' disabled'}>&darr;</button>
+        </li>`).join('');
+      order.nextElementSibling.hidden = picks.length < 2;
+      form.querySelector('[data-change-picks]').textContent = picks.length > 1 ? 'Change my picks' : 'Add more ideas';
+    }
+
+    function showAbout() {
+      form.querySelector('.summary ol').innerHTML = picks.map((id, i) => `<li><span class="num">${i + 1}</span>${short(id)}</li>`).join('');
+      form.querySelector('.summary [data-to]').textContent = picks.length > 1 ? 'Change order' : 'Back';
+      form.querySelectorAll('[data-if]').forEach(el => { el.hidden = !picks.includes(el.dataset.if); });
+      form.querySelector('[data-why]').textContent = picks[0] === 'other' ? 'Why is your idea your #1?' : `Why is ${title(picks[0])} your #1?`;
+    }
+
+    order.addEventListener('click', e => {
+      const button = e.target.closest('[data-move]');
+      if (!button) return;
+      const from = [...order.children].indexOf(button.closest('li'));
+      const to = from + Number(button.dataset.move);
+      const before = new Map([...order.children].map(li => [li.dataset.id, li.getBoundingClientRect().top]));
+      [picks[from], picks[to]] = [picks[to], picks[from]];
+      paint();
+      showOrder();
+      // Slide the two rows past each other, so it's clear what moved.
+      if (!calm.matches) {
+        [...order.children].forEach(li => {
+          const shift = before.get(li.dataset.id) - li.getBoundingClientRect().top;
+          if (shift) li.animate([{ translate: `0 ${shift}px` }, { translate: '0 0' }], { duration: 350, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+        });
+      }
+      // Keep focus on the idea that moved.
+      const moved = order.children[to];
+      (moved.querySelector(`[data-move="${button.dataset.move}"]:enabled`) || moved.querySelector('[data-move]:enabled'))?.focus();
+    });
+
+    form.querySelectorAll('[data-to]').forEach(button => button.addEventListener('click', () => {
+      if (button.dataset.to === 'about') showAbout();
+      showStep(button.dataset.to);
+      sheet.querySelector('#sheet-title').focus();
+    }));
+    form.querySelector('[data-change-picks]').addEventListener('click', () => sheet.close());
+
+    function openSheet() {
+      if (!picks.length) return note('Pick at least one idea first.', true);
       form.reset();
       error.textContent = '';
       form.hidden = false;
       done.hidden = true;
-
-      sheet.querySelector('[data-kicker]').textContent = other ? 'Something else' : document.querySelector(`.idea[data-idea="${idea}"] h2`).firstChild.textContent;
-      sheet.querySelector('#sheet-title').textContent = other ? 'What should we build?' : 'Tell us about your merchants';
-      form.querySelector('[data-size-legend]').textContent = `How many of your merchants ${other ? 'would' : 'could'} use it?`;
-      form.querySelector('[data-kinds-legend]').textContent = idea === 'checkout-templates' ? 'Which industries need a template?' : 'What kind of merchants?';
-      form.querySelectorAll('[data-only="other"]').forEach(el => { el.hidden = !other; });
-      form.querySelectorAll('[data-not="other"]').forEach(el => { el.hidden = other; });
-      form.querySelector('[type="submit"]').textContent = `${ballot ? 'Update' : other ? 'Send' : 'Count'} my ${other ? 'idea' : 'vote'}`;
-      form.querySelector('[data-remove]').hidden = !ballot;
-      form.querySelector('[data-remove]').textContent = `Remove my ${other ? 'idea' : 'vote'}`;
-
       if (ballot) {
         field('text').value = ballot.text;
         field('why').value = ballot.why;
         field('pilot').checked = ballot.pilot;
         form.querySelectorAll('[name="size"]').forEach(input => { input.checked = input.value === ballot.size; });
         form.querySelectorAll('[name="kinds"]').forEach(input => { input.checked = ballot.kinds.includes(input.value); });
+        form.querySelectorAll('[name="industries"]').forEach(input => { input.checked = ballot.industries.includes(input.value); });
       }
       field('name').value = voter.name;
       field('office').value = voter.office;
       showWho(Boolean(voter.name));
-
+      form.querySelector('[type="submit"]').textContent = ballot ? 'Update my ranking' : 'Send my ranking';
+      form.querySelector('[data-remove]').hidden = !ballot;
+      showOrder();
+      showStep('order');
       sheet.showModal();
     }
 
-    function finish(title, text) {
-      sheet.querySelector('[data-done-title]').textContent = title;
+    function finish(heading, text) {
+      sheet.querySelector('[data-done-title]').textContent = heading;
       sheet.querySelector('[data-done-text]').textContent = text;
       form.hidden = true;
       done.hidden = false;
       sheet.querySelector('[data-done-title]').focus();
     }
 
-    function agreeLine(idea, tally) {
-      if (idea === 'other') return 'The product team reads every one.';
-      const others = (tally.ideas?.[idea] || 1) - 1;
-      if (others < 1) return "You're the first agent to ask for this one.";
-      return `You and ${others.toLocaleString()} other agent${others === 1 ? '' : 's'} want this.`;
+    function firstLine(id, tally) {
+      if (id === 'other') return 'The product team reads every idea.';
+      const others = (tally.ideas?.[id]?.places[0] || 1) - 1;
+      if (others < 1) return `You're the first agent to put ${title(id)} first.`;
+      return `${others.toLocaleString()} other agent${others === 1 ? '' : 's'} put ${title(id)} first too.`;
     }
 
     form.addEventListener('submit', async e => {
       e.preventDefault();
-      const idea = openIdea;
-      const other = idea === 'other';
-      const size = form.querySelector('[name="size"]:checked')?.value || null;
+      const ranking = [...picks];
+      const size = checked('size')[0] || null;
       const name = field('name').value.trim();
       const office = field('office').value.trim();
       const text = field('text').value.trim();
 
       const problem =
-        (other && !text && [field('text'), 'Tell us what to build.']) ||
-        (!other && !size && [form.querySelector('[name="size"]'), 'Pick how many of your merchants could use it.']) ||
+        (ranking.includes('other') && !text && [field('text'), 'Tell us what your idea is.']) ||
+        (!size && [form.querySelector('[name="size"]'), 'Pick how many merchants you work with.']) ||
         (!name && [field('name'), 'Add your name.']);
       if (problem) {
         if (problem[0].closest('.who')) showWho(false);
@@ -689,13 +1040,14 @@
 
       Object.assign(voter, { name, office });
       saved.set('solacon2.voter', voter);
-      const ballot = {
+      const body = {
         voter: voter.id,
-        idea,
+        ranking,
+        text: ranking.includes('other') ? text : '',
         size,
-        kinds: [...form.querySelectorAll('[name="kinds"]:checked')].map(input => input.value),
-        why: other ? '' : field('why').value.trim(),
-        text: other ? text : '',
+        kinds: checked('kinds'),
+        industries: ranking.includes('checkout-templates') ? checked('industries') : [],
+        why: field('why').value.trim(),
         pilot: field('pilot').checked,
         name,
         office,
@@ -703,28 +1055,28 @@
 
       const submit = form.querySelector('[type="submit"]');
       submit.disabled = true;
-      pending[idea] = { method: 'POST', body: ballot };
-      saved.set('solacon2.pending', pending);
-      const result = await flush(idea);
+      pending = { method: 'POST', body };
+      saved.set('solacon2.pending-ranking', pending);
+      const result = await flush();
       submit.disabled = false;
 
       if (result && !result.ok && !result.retry) {
         error.textContent = result.data.error || "That didn't go through. Check the form and try again.";
         return;
       }
-      votes[idea] = ballot;
-      saved.set('solacon2.votes', votes);
+      ballot = body;
+      saved.set('solacon2.ranking', ballot);
       paint();
-      if (result?.ok) finish(other ? 'Got it. Thank you.' : 'Counted. Thank you.', agreeLine(idea, result.data));
+      if (result?.ok) finish('Your top 3 is in. Thank you.', firstLine(ranking[0], result.data));
       else finish('Saved on your phone', "No connection right now. It'll send on its own when you're back online.");
     });
 
     form.querySelector('[data-remove]').addEventListener('click', () => {
-      const idea = openIdea;
-      delete votes[idea];
-      saved.set('solacon2.votes', votes);
-      pending[idea] = { method: 'DELETE', body: { voter: voter.id, idea } };
-      saved.set('solacon2.pending', pending);
+      ballot = null;
+      picks = [];
+      saved.set('solacon2.ranking', null);
+      pending = { method: 'DELETE', body: { voter: voter.id } };
+      saved.set('solacon2.pending-ranking', pending);
       paint();
       sheet.close();
       flush();
@@ -735,17 +1087,13 @@
       showWho(false);
       field('name').focus();
     });
+    tray.querySelector('[data-next]').addEventListener('click', openSheet);
     sheet.querySelector('.close').addEventListener('click', () => sheet.close());
     sheet.querySelector('[data-back]').addEventListener('click', () => sheet.close());
     sheet.addEventListener('click', e => { if (e.target === sheet) sheet.close(); });
 
-    document.querySelectorAll('[data-idea]').forEach(el => {
-      el.querySelector('.vote').addEventListener('click', () => openSheet(el.dataset.idea));
-    });
-
-    // The tally: turnout under the intro on phones. On the booth, a meter on each idea,
-    // the ideas ranked by votes, and the leader marked.
-    const main = document.querySelector('main');
+    // The tally: turnout under the intro on phones. On the booth, each idea's points split
+    // by place, the ideas ranked by points, and the one with the most #1 picks marked.
     const ideasList = document.querySelector('.ideas');
     const live = document.querySelector('.live');
 
@@ -755,33 +1103,47 @@
       const plural = (n, word) => `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`;
       main.classList.remove('no-tally');
       main.classList.toggle('no-votes', !agents);
-      document.querySelector('.turnout').textContent = agents ? `${plural(agents, 'agent')} ${agents === 1 ? 'has' : 'have'} voted so far.` : '';
+      document.querySelector('.turnout').textContent = agents ? `${plural(agents, 'agent')} ${agents === 1 ? 'has' : 'have'} ranked so far.` : '';
       live.classList.toggle('empty', !agents);
       live.querySelector('[data-agents]').textContent = agents.toLocaleString();
       live.querySelector('[data-offices]').textContent = offices.toLocaleString();
-      live.querySelector('.scan').textContent = agents ? 'Scan the code to vote from your phone' : 'Be the first: scan the code to vote';
+      live.querySelector('.scan').textContent = agents ? 'Scan the code to rank them from your phone' : 'Be the first: scan the code to rank them';
       if (SOLA_PRESENTING) rank(tally.ideas);
     }
 
-    function rank(counts) {
-      const count = card => counts[card.dataset.idea] || 0;
-      const cards = [...ideasList.children];
-      const before = new Map(cards.map(card => [card, card.getBoundingClientRect().top]));
-      const most = Math.max(1, ...cards.map(count));
-      const order = [...cards].sort((a, b) => count(b) - count(a));
-      order.forEach((card, i) => {
-        card.style.order = i;
-        card.querySelector('.meter i').style.setProperty('--share', count(card) / most);
-        card.querySelector('.meter b').textContent = count(card).toLocaleString();
-        const leads = i === 0 && count(card) > 0 && count(card) > count(order[1]);
-        const badge = card.querySelector('h2 .badge');
-        if (leads && !badge) card.querySelector('h2').insertAdjacentHTML('beforeend', '<span class="badge">Most wanted</span>');
+    function rank(ideas) {
+      const score = c => ideas[c.dataset.idea] || { points: 0, places: Array(PLACES).fill(0) };
+      const list = [...ideasList.children];
+      const before = new Map(list.map(c => [c, c.getBoundingClientRect().top]));
+      const most = Math.max(1, ...list.map(c => score(c).points));
+      const firsts = list.map(c => score(c).places[0]);
+      const top = Math.max(...firsts);
+      const oneLeader = top > 0 && firsts.filter(n => n === top).length === 1;
+      // Most points first; ties go to more #1 picks, then more #2 picks.
+      const sorted = [...list].sort((a, b) => {
+        const x = score(a);
+        const y = score(b);
+        return y.points - x.points || y.places[0] - x.places[0] || y.places[1] - x.places[1];
+      });
+      sorted.forEach((c, i) => {
+        const { points, places } = score(c);
+        c.style.order = i;
+        const bar = c.querySelector('.meter i > span');
+        bar.style.setProperty('--share', points / most);
+        [...bar.children].forEach((part, place) => {
+          part.hidden = !places[place];
+          part.style.setProperty('--part', places[place] * (PLACES - place));
+        });
+        c.querySelector('.meter b').textContent = points.toLocaleString();
+        const leads = oneLeader && places[0] === top;
+        const badge = c.querySelector('h2 .badge');
+        if (leads && !badge) c.querySelector('h2').insertAdjacentHTML('beforeend', '<span class="badge">Most #1 picks</span>');
         if (!leads && badge) badge.remove();
       });
       // Glide each idea from its old place to its new one.
-      cards.forEach(card => {
-        const shift = before.get(card) - card.getBoundingClientRect().top;
-        if (shift) card.animate([{ translate: `0 ${shift}px` }, { translate: '0 0' }], { duration: 700, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+      list.forEach(c => {
+        const shift = before.get(c) - c.getBoundingClientRect().top;
+        if (shift) c.animate([{ translate: `0 ${shift}px` }, { translate: '0 0' }], { duration: 700, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
       });
     }
 
@@ -795,7 +1157,8 @@
       }
     }
 
-    paint();
+    // The booth shows the tally only, never a ranking someone tried on its browser.
+    if (!SOLA_PRESENTING) paint();
     flush().then(refresh);
     window.addEventListener('online', () => flush());
 

@@ -12,6 +12,9 @@
   <style>
     .slide { align-content: start; }
 
+    /* A working page: no ring behind the tables. */
+    .ring { display: none; }
+
     .unlock {
       display: flex;
       flex-wrap: wrap;
@@ -48,7 +51,7 @@
 
     .unlock[hidden],
     .report[hidden] { display: none; }
-    .report { display: grid; gap: 2rem; }
+    .report { display: grid; gap: 2.5rem; }
 
     .stats {
       display: flex;
@@ -83,26 +86,29 @@
 
     th { color: var(--text-muted); font-weight: 600; white-space: nowrap; }
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    td.why { min-width: 16rem; color: var(--text-muted); }
+    td.notes { min-width: 18rem; color: var(--text-muted); }
+    td.notes b { color: var(--text); font-weight: 600; }
 
-    /* Merchants per idea: one stacked bar, light to bright as the books get bigger. */
-    .sizes {
+    /* Points per idea: #1 picks, then #2, then #3, brightest first. */
+    .places {
       display: flex;
       gap: 2px;
-      width: 12rem;
       height: 0.8rem;
+      margin-top: 0.3rem;
+      overflow: hidden;
+      border-radius: 0 4px 4px 0;
     }
 
-    .sizes span { min-width: 2px; }
-    .sizes span:last-child { border-radius: 0 4px 4px 0; }
-    .size-few { background: #2b4596; }
-    .size-dozens { background: #4f7bff; }
-    .size-many { background: #b3c6ff; }
+    .places span { min-width: 2px; }
+    .p1 { background: #b3c6ff; }
+    .p2 { background: #4f7bff; }
+    .p3 { background: #2b4596; }
 
     .legend {
       display: flex;
       flex-wrap: wrap;
       gap: 0.4rem 1.25rem;
+      margin-bottom: 0.5rem;
       color: var(--text-muted);
       font-size: 0.85rem;
     }
@@ -116,6 +122,29 @@
       vertical-align: -0.1em;
     }
 
+    /* Head to head: blue where the row's idea usually won, red where it usually lost. */
+    .versus { width: auto; }
+    .versus th, .versus td { border: 0; padding: 0.15rem; }
+    .versus thead th { width: 6.5rem; text-align: center; white-space: normal; vertical-align: bottom; }
+    .versus tbody th { padding-right: 0.75rem; text-align: right; vertical-align: middle; }
+
+    .versus td span {
+      display: grid;
+      place-items: center;
+      height: 2.6rem;
+      border-radius: 6px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .versus td.self span { background: rgba(244, 246, 255, 0.04); }
+
+    .explain {
+      max-width: 48rem;
+      margin-bottom: 1rem;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+    }
+
     .tools {
       display: flex;
       flex-wrap: wrap;
@@ -125,6 +154,15 @@
     }
 
     .tools div { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
+
+    .filters {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      padding: 0.9rem 0;
+      background: var(--ink);
+      border-bottom: 1px solid var(--line);
+    }
 
     h2.section { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.9rem; }
   </style>
@@ -137,7 +175,7 @@
   <main class="slide">
     <div>
       <p class="mark">What's next · Product team only</p>
-      <h1>What agents asked for.</h1>
+      <h1>How agents ranked the ideas.</h1>
     </div>
 
     <form class="unlock">
@@ -147,33 +185,60 @@
     <p class="message" role="status"></p>
 
     <div class="report" hidden>
+      <div class="tools filters">
+        <div>
+          <select data-filter="size" aria-label="Agents by how many merchants they work with">
+            <option value="">Any number of merchants</option>
+            <option value="few">Fewer than 10 merchants</option>
+            <option value="dozens">10 to 50 merchants</option>
+            <option value="many">More than 50 merchants</option>
+          </select>
+          <select data-filter="kind" aria-label="Agents by the kinds of merchants they work with">
+            <option value="">Any kind of merchant</option>
+          </select>
+        </div>
+        <div>
+          <span class="message" data-showing></span>
+          <button class="button button--ghost" type="button" data-refresh>Refresh</button>
+        </div>
+      </div>
+
       <div class="stats"></div>
 
       <section>
-        <h2 class="section">By idea</h2>
+        <h2 class="section">Points by idea</h2>
+        <p class="explain">A #1 pick is worth 3 points, #2 is 2, and #3 is 1. "In top 3" is the share of agents who ranked the idea at all.</p>
         <div class="legend">
-          <span><i class="size-few"></i>A few merchants</span>
-          <span><i class="size-dozens"></i>10 to 50</span>
-          <span><i class="size-many"></i>More than 50</span>
+          <span><i class="p1"></i>From #1 picks</span>
+          <span><i class="p2"></i>#2</span>
+          <span><i class="p3"></i>#3</span>
         </div>
         <div class="table-wrap"><table class="by-idea"></table></div>
       </section>
 
       <section>
+        <h2 class="section">Head to head</h2>
+        <p class="explain">Each cell is the share of agents who put the row's idea above the column's, out of the agents who ranked at least one of the two. Leaving an idea out counts as ranking it lower.</p>
+        <div class="table-wrap"><table class="versus"></table></div>
+      </section>
+
+      <section data-industries hidden>
+        <h2 class="section">Checkout template industries</h2>
+        <p class="explain"></p>
+      </section>
+
+      <section>
         <div class="tools">
-          <h2 class="section">Every vote</h2>
-          <div>
-            <select aria-label="Show votes for"></select>
-            <button class="button button--ghost" type="button" data-refresh>Refresh</button>
-            <button class="button" type="button" data-csv>Download CSV</button>
-          </div>
+          <h2 class="section">Every ranking</h2>
+          <button class="button" type="button" data-csv>Download CSV</button>
         </div>
-        <div class="table-wrap"><table class="votes"></table></div>
+        <div class="table-wrap"><table class="ballots"></table></div>
       </section>
     </div>
   </main>
 
   <script>
+    const PLACES = 3;
     const IDEAS = {
       'clerk-pos': 'Clerk POS',
       terminal: 'Standalone Sola Terminal',
@@ -181,20 +246,25 @@
       'cash-advance': 'Merchant Cash Advance',
       'checkout-templates': 'More Checkout templates',
       'otc-cards': 'OTC benefits cards',
-      other: 'Something else',
+      other: 'Their own idea',
     };
-    const SIZES = { few: 'A few', dozens: '10 to 50', many: 'More than 50' };
+    const SHORT = { 'clerk-pos': 'Clerk POS', terminal: 'Terminal', bnpl: 'BNPL', 'cash-advance': 'Cash advance', 'checkout-templates': 'Templates', 'otc-cards': 'OTC cards' };
+    const SIZES = { few: 'Fewer than 10', dozens: '10 to 50', many: 'More than 50' };
     const KINDS = { retail: 'Retail', restaurant: 'Restaurants', grocery: 'Grocery', pharmacy: 'Pharmacy', medical: 'Medical', auto: 'Auto', services: 'Services', ecommerce: 'Ecommerce', nonprofit: 'Nonprofit', other: 'Other' };
     const kindNames = kinds => kinds.map(kind => KINDS[kind] || kind).join(', ');
+    const ideaName = id => IDEAS[id] || id || '';
 
     // Everything agents typed is escaped before it's shown.
     const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
     const when = iso => new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const percent = (n, of) => (of ? `${Math.round((n / of) * 100)}%` : '—');
 
     const unlock = document.querySelector('.unlock');
     const message = document.querySelector('.message');
     const report = document.querySelector('.report');
-    const filter = document.querySelector('select');
+    const sizeFilter = document.querySelector('[data-filter="size"]');
+    const kindFilter = document.querySelector('[data-filter="kind"]');
+    kindFilter.insertAdjacentHTML('beforeend', Object.entries(KINDS).map(([kind, name]) => `<option value="${kind}">${name}</option>`).join(''));
     let data = null;
 
     function say(text, bad) {
@@ -222,81 +292,131 @@
       }
     }
 
+    // The filters narrow everything below them to agents with that book size or merchant kind.
+    function shown() {
+      return data.ballots.filter(b =>
+        (!sizeFilter.value || b.size === sizeFilter.value) &&
+        (!kindFilter.value || b.kinds.includes(kindFilter.value)));
+    }
+
     function render() {
-      const ballots = data.ballots;
+      const ballots = shown();
+      const agents = ballots.length;
       report.hidden = false;
-      document.querySelector('.stats').innerHTML = `
-        <p><b>${data.agents}</b> agents</p>
-        <p><b>${data.offices}</b> offices</p>
-        <p><b>${ballots.filter(b => b.idea !== 'other').length}</b> votes</p>
-        <p><b>${ballots.filter(b => b.pilot).length}</b> pilot offers</p>
-        <p><b>${ballots.filter(b => b.idea === 'other').length}</b> new ideas</p>`;
+      document.querySelector('[data-showing]').textContent =
+        agents === data.ballots.length ? '' : `Showing ${agents} of ${data.ballots.length} agents`;
+
+      const offices = new Set(ballots.map(b => (b.office || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()).filter(Boolean));
+      const stat = (n, one, many) => `<p><b>${n}</b> ${n === 1 ? one : many}</p>`;
+      document.querySelector('.stats').innerHTML =
+        stat(agents, 'agent', 'agents') +
+        stat(offices.size, 'office', 'offices') +
+        stat(ballots.filter(b => b.pilot).length, 'pilot offer', 'pilot offers') +
+        stat(ballots.filter(b => b.ranking.includes('other')).length, 'own idea', 'own ideas');
 
       const rows = Object.keys(IDEAS).map(id => {
-        const mine = ballots.filter(b => b.idea === id);
-        const sizes = Object.keys(SIZES).map(size => [size, mine.filter(b => b.size === size).length]);
-        const kinds = {};
-        mine.forEach(b => b.kinds.forEach(kind => { kinds[kind] = (kinds[kind] || 0) + 1; }));
-        const topKinds = Object.entries(kinds).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([kind, n]) => `${KINDS[kind] || kind} (${n})`).join(', ');
-        return { id, count: mine.length, sizes, pilots: mine.filter(b => b.pilot).length, topKinds };
-      }).sort((a, b) => b.count - a.count);
-      const most = Math.max(1, ...rows.map(r => r.count));
+        const places = Array(PLACES).fill(0);
+        ballots.forEach(b => {
+          const place = b.ranking.indexOf(id);
+          if (place >= 0 && place < PLACES) places[place]++;
+        });
+        const points = places.reduce((sum, n, place) => sum + n * (PLACES - place), 0);
+        const ranked = places.reduce((sum, n) => sum + n, 0);
+        const pilots = ballots.filter(b => b.pilot && b.ranking[0] === id).length;
+        return { id, places, points, ranked, pilots };
+      }).sort((a, b) => b.points - a.points || b.places[0] - a.places[0] || b.places[1] - a.places[1]);
+      const most = Math.max(1, ...rows.map(r => r.points));
 
       document.querySelector('.by-idea').innerHTML = `
-        <thead><tr><th>Idea</th><th class="num">Votes</th><th>Merchants</th><th class="num">Pilot</th><th>Top merchant types</th></tr></thead>
+        <thead><tr><th>Idea</th><th class="num">Points</th><th class="num">#1</th><th class="num">#2</th><th class="num">#3</th><th class="num">In top 3</th><th class="num">Pilot offers for their #1</th></tr></thead>
         <tbody>${rows.map(r => `
           <tr>
-            <td>${IDEAS[r.id]}</td>
-            <td class="num">${r.count}</td>
-            <td><div class="sizes" style="width: ${(r.count / most) * 12}rem">${r.sizes.filter(([, n]) => n).map(([size, n]) =>
-              `<span class="size-${size}" style="flex: ${n}" title="${SIZES[size]}: ${n}"></span>`).join('')}</div></td>
+            <td>${ideaName(r.id)}
+              <div class="places" style="width: ${(r.points / most) * 14}rem">${r.places.map((n, place) => n
+                ? `<span class="p${place + 1}" style="flex: ${n * (PLACES - place)}" title="#${place + 1}: ${n} agent${n === 1 ? '' : 's'}"></span>` : '').join('')}</div>
+            </td>
+            <td class="num">${r.points}</td>
+            ${r.places.map(n => `<td class="num">${n}</td>`).join('')}
+            <td class="num">${percent(r.ranked, agents)}</td>
             <td class="num">${r.pilots}</td>
-            <td>${esc(r.topKinds) || '—'}</td>
           </tr>`).join('')}</tbody>`;
 
-      const current = filter.value;
-      filter.innerHTML = `<option value="">All ideas (${ballots.length})</option>` +
-        Object.entries(IDEAS).map(([id, name]) => `<option value="${id}">${name} (${ballots.filter(b => b.idea === id).length})</option>`).join('');
-      filter.value = current;
-      renderVotes();
-    }
+      // Head to head, in points order. Their own ideas aren't one idea, so they sit this out.
+      const ids = rows.map(r => r.id).filter(id => id !== 'other');
+      const versus = (a, b) => {
+        let wins = 0;
+        let count = 0;
+        ballots.forEach(x => {
+          const pa = x.ranking.indexOf(a);
+          const pb = x.ranking.indexOf(b);
+          if (pa < 0 && pb < 0) return;
+          count++;
+          if (pa >= 0 && (pb < 0 || pa < pb)) wins++;
+        });
+        return { wins, count };
+      };
+      document.querySelector('.versus').innerHTML = `
+        <thead><tr><th></th>${ids.map(id => `<th>${SHORT[id]}</th>`).join('')}</tr></thead>
+        <tbody>${ids.map(a => `
+          <tr>
+            <th>${SHORT[a]}</th>
+            ${ids.map(b => {
+              if (a === b) return '<td class="self"><span></span></td>';
+              const { wins, count } = versus(a, b);
+              if (!count) return '<td><span>—</span></td>';
+              const share = wins / count;
+              const strength = (Math.abs(share - 0.5) * 2 * 0.55).toFixed(2);
+              const tint = share > 0.5 ? `rgba(79, 123, 255, ${strength})` : share < 0.5 ? `rgba(255, 120, 120, ${strength})` : 'transparent';
+              return `<td><span style="background: ${tint}" title="${wins} of ${count} agents put ${SHORT[a]} above ${SHORT[b]}">${Math.round(share * 100)}%</span></td>`;
+            }).join('')}
+          </tr>`).join('')}</tbody>`;
 
-    function shown() {
-      return data.ballots.filter(b => !filter.value || b.idea === filter.value);
-    }
+      const industries = {};
+      ballots.forEach(b => (b.industries || []).forEach(kind => { industries[kind] = (industries[kind] || 0) + 1; }));
+      const asked = Object.entries(industries).sort((a, b) => b[1] - a[1]);
+      const industriesSection = document.querySelector('[data-industries]');
+      industriesSection.hidden = !asked.length;
+      industriesSection.querySelector('p').textContent = asked.map(([kind, n]) => `${KINDS[kind] || kind} (${n})`).join(' · ');
 
-    function renderVotes() {
-      const list = shown();
-      document.querySelector('.votes').innerHTML = `
-        <thead><tr><th>When</th><th>Agent</th><th>Office</th><th>Idea</th><th>Merchants</th><th>Types</th><th>Why or idea</th><th>Pilot</th></tr></thead>
-        <tbody>${list.map(b => `
+      document.querySelector('.ballots').innerHTML = `
+        <thead><tr><th>When</th><th>Agent</th><th>Office</th><th>#1</th><th>#2</th><th>#3</th><th>Merchants</th><th>Kinds</th><th>Notes</th><th>Pilot</th></tr></thead>
+        <tbody>${ballots.map(b => `
           <tr>
             <td>${esc(when(b.at))}</td>
             <td>${esc(b.name)}</td>
             <td>${esc(b.office) || '—'}</td>
-            <td>${esc(IDEAS[b.idea])}</td>
+            ${Array.from({ length: PLACES }, (_, place) => `<td>${esc(ideaName(b.ranking[place])) || '—'}</td>`).join('')}
             <td>${esc(SIZES[b.size] || '—')}</td>
             <td>${esc(kindNames(b.kinds)) || '—'}</td>
-            <td class="why">${esc(b.text || b.why) || '—'}</td>
+            <td class="notes">${[
+              b.why && `<b>Why their #1:</b> ${esc(b.why)}`,
+              b.text && `<b>Their idea:</b> ${esc(b.text)}`,
+              b.industries?.length && `<b>Templates for:</b> ${esc(kindNames(b.industries))}`,
+            ].filter(Boolean).join('<br>') || '—'}</td>
             <td>${b.pilot ? 'Yes' : ''}</td>
-          </tr>`).join('') || '<tr><td colspan="8">No votes yet.</td></tr>'}</tbody>`;
+          </tr>`).join('') || `<tr><td colspan="10">No rankings${agents === data.ballots.length ? ' yet' : ' match these filters'}.</td></tr>`}</tbody>`;
     }
 
     function csv() {
       // A leading = + - or @ would make a spreadsheet run the cell as a formula.
       const cell = value => `"${String(value ?? '').replace(/^[=+\-@]/, "'$&").replace(/"/g, '""')}"`;
-      const lines = [['When', 'Agent', 'Office', 'Idea', 'Merchants', 'Types', 'Why or idea', 'Pilot']]
-        .concat(shown().map(b => [b.at, b.name, b.office, IDEAS[b.idea], SIZES[b.size] || '', kindNames(b.kinds), b.text || b.why, b.pilot ? 'Yes' : '']));
+      const lines = [['When', 'Agent', 'Office', '#1', '#2', '#3', 'Merchants', 'Kinds', 'Why their #1', 'Their idea', 'Templates for', 'Pilot']]
+        .concat(shown().map(b => [
+          b.at, b.name, b.office,
+          ...Array.from({ length: PLACES }, (_, place) => ideaName(b.ranking[place])),
+          SIZES[b.size] || '', kindNames(b.kinds), b.why, b.text, kindNames(b.industries || []), b.pilot ? 'Yes' : '',
+        ]));
       const blob = new Blob(['﻿' + lines.map(line => line.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `whats-next-votes-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `whats-next-rankings-${new Date().toISOString().slice(0, 10)}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
     }
 
     unlock.addEventListener('submit', e => { e.preventDefault(); load(); });
-    filter.addEventListener('change', renderVotes);
+    sizeFilter.addEventListener('change', render);
+    kindFilter.addEventListener('change', render);
     document.querySelector('[data-refresh]').addEventListener('click', load);
     document.querySelector('[data-csv]').addEventListener('click', csv);
     load();

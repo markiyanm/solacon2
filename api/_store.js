@@ -1,14 +1,15 @@
 // Shared by the What's next vote functions. Files starting with _ aren't routes.
 //
-// Votes live in one Redis hash, one field per agent per idea ("<voter>:<idea>"), so a
-// second vote from the same phone replaces the first. The store is Upstash Redis, added
-// to the Vercel project from its Storage tab, which sets the REST URL and token below.
+// Each agent sends one ballot: their top three ideas, in order. Ballots live in one Redis
+// hash, one field per phone, so sending again replaces the last one. The store is Upstash
+// Redis, added to the Vercel project from its Storage tab, which sets the REST URL and token.
 
 const crypto = require('crypto');
 
-const KEY = 'solacon2:whats-next:ballots';
+const KEY = 'solacon2:whats-next:rankings';
 
 const IDEAS = ['clerk-pos', 'terminal', 'bnpl', 'cash-advance', 'checkout-templates', 'otc-cards', 'other'];
+// How many merchants the agent works with, and what kinds.
 const SIZES = ['few', 'dozens', 'many'];
 const KINDS = ['retail', 'restaurant', 'grocery', 'pharmacy', 'medical', 'auto', 'services', 'ecommerce', 'nonprofit', 'other'];
 
@@ -37,13 +38,21 @@ async function ballots() {
   return list;
 }
 
-// What the booth shows: votes per idea, and how many agents and offices took part.
+// A #1 pick is worth 3 points, #2 is 2, and #3 is 1.
+const PLACES = 3;
+
+// What the booth shows: points per idea and how often it was picked 1st, 2nd, and 3rd,
+// and how many agents and offices took part.
 function tally(list) {
-  const ideas = Object.fromEntries(IDEAS.map(id => [id, 0]));
+  const ideas = Object.fromEntries(IDEAS.map(id => [id, { points: 0, places: Array(PLACES).fill(0) }]));
   const agents = new Set();
   const offices = new Set();
   list.forEach(b => {
-    if (b.idea in ideas) ideas[b.idea]++;
+    (b.ranking || []).slice(0, PLACES).forEach((id, place) => {
+      if (!(id in ideas)) return;
+      ideas[id].places[place]++;
+      ideas[id].points += PLACES - place;
+    });
     agents.add(b.voter);
     // Office is optional; agents who skip it count as agents but not as an office.
     const office = (b.office || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
@@ -73,4 +82,4 @@ function fail(res, error) {
   return res.status(502).json({ error: "Couldn't reach the vote store." });
 }
 
-module.exports = { KEY, IDEAS, SIZES, KINDS, redis, ballots, tally, text, sameSecret, fail };
+module.exports = { KEY, IDEAS, SIZES, KINDS, PLACES, redis, ballots, tally, text, sameSecret, fail };
