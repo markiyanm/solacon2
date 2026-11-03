@@ -1,5 +1,5 @@
 // POST /api/vote/   send or replace a ranking:
-//   { voter, ranking: [1st, 2nd, 3rd], text, size, kinds, industries, why, pilot, name, office, kiosk }
+//   { voter, ranking: [1st, 2nd, 3rd], text, size, kinds, kindsOther, industries, why, pilots, name, office, kiosk }
 // DELETE /api/vote/ take it back: { voter, kiosk }
 // Both answer with the new tally, so the phone can say how the agent's #1 is doing, and
 // the id the ballot is filed under.
@@ -47,6 +47,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'Pick one to three ideas, each once.' });
     }
     const pick = list => (Array.isArray(list) ? KINDS.filter(kind => list.includes(kind)) : []);
+    const kinds = pick(body.kinds);
 
     const ballot = {
       voter,
@@ -54,11 +55,14 @@ module.exports = async (req, res) => {
       // Their own idea, when "Something else" is in their top 3.
       text: ranking.includes('other') ? text(body.text, 300) : '',
       size: SIZES.includes(body.size) ? body.size : null,
-      kinds: pick(body.kinds),
+      kinds,
+      // What "other" means, when they ticked it.
+      kindsOther: kinds.includes('other') ? text(body.kindsOther, 80) : '',
       // Which industries need a template, when Checkout templates is in their top 3.
       industries: ranking.includes('checkout-templates') ? pick(body.industries) : [],
       why: text(body.why, 600),
-      pilot: body.pilot === true,
+      // The picks they'd bring merchants to a pilot of.
+      pilots: Array.isArray(body.pilots) ? ranking.filter(id => body.pilots.includes(id)) : [],
       name: text(body.name, 80),
       office: text(body.office, 80),
       at: new Date().toISOString(),

@@ -342,67 +342,85 @@
       font-size: 0.85rem;
     }
 
+    /* Name and office share one grid, so the two boxes line up even when a label wraps. */
     .who {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
+      grid-template-rows: auto auto;
+      grid-auto-flow: column;
+      align-items: end;
+      gap: 0 0.75rem;
     }
+
+    .who .field { display: contents; }
 
     @media (max-width: 480px) {
-      .who { grid-template-columns: 1fr; }
+      .who { grid-template-columns: 1fr; grid-auto-flow: row; gap: 0.75rem 0; }
     }
 
-    /* The picks, in order, with arrows to move them. */
+    /* The picks in tap order, one line each; the arrow moves a pick up a place. */
     .order {
       list-style: none;
       padding: 0;
       display: grid;
-      gap: 0.5rem;
+      gap: 0.35rem;
     }
 
     .order li {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
-      padding: 0.6rem 0.5rem 0.6rem 0.8rem;
-      border-radius: 0.9rem;
+      gap: 0.55rem;
+      padding: 0.3rem 0.3rem 0.3rem 0.5rem;
+      border-radius: 0.7rem;
       background: rgba(244, 246, 255, 0.06);
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
     }
 
     .order .num {
-      width: 1.9rem;
-      font-size: 0.95rem;
+      width: 1.5rem;
+      font-size: 0.8rem;
     }
 
-    .order li > span:not(.num) { flex: 1; min-width: 0; }
+    .order li > span:not(.num) {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     .step {
       flex: none;
-      width: 2.3rem;
-      height: 2.3rem;
+      width: 1.9rem;
+      height: 1.9rem;
       border: 0;
       border-radius: 50%;
       background: rgba(244, 246, 255, 0.1);
       color: var(--text);
       font: inherit;
-      font-size: 1.05rem;
+      font-size: 1rem;
+      line-height: 1;
       cursor: pointer;
     }
 
     .step:hover { background: rgba(244, 246, 255, 0.2); }
     .step:disabled { visibility: hidden; }
 
-    /* An empty slot for each pick still to come. */
-    .order .slot {
-      background: transparent;
-      box-shadow: inset 0 0 0 1.5px var(--line);
+    .order-left {
+      margin-top: -0.4rem;
       color: var(--text-muted);
-      font-weight: 500;
+      font-size: 0.85rem;
     }
 
-    .order .slot .num { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line); color: var(--text-muted); }
+    .order-left:empty { display: none; }
+
+    .panel fieldset small {
+      display: block;
+      margin-top: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
 
     .questions {
       display: grid;
@@ -419,27 +437,6 @@
 
     .who-known { color: var(--text-muted); }
     .who-known b { color: var(--text); font-weight: 600; }
-
-    .pilot {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.7rem;
-      cursor: pointer;
-    }
-
-    .pilot input {
-      flex: none;
-      width: 1.25rem;
-      height: 1.25rem;
-      margin: 0.15rem 0 0;
-      accent-color: var(--sola-blue);
-    }
-
-    .pilot small {
-      display: block;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
 
     .error {
       color: #ff9b9b;
@@ -718,6 +715,7 @@
           </div>
 
           <ol class="order" aria-label="Your picks, in order"></ol>
+          <p class="order-left"></p>
           <p class="panel-note" aria-live="polite"></p>
 
           <div class="questions">
@@ -730,7 +728,7 @@
 
             <label class="field">
               <span><span data-why></span> <span class="optional">(optional)</span></span>
-              <textarea name="why" rows="3" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
+              <textarea name="why" rows="2" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
               <small>Leave out account numbers and card details.</small>
             </label>
 
@@ -757,6 +755,10 @@
                 <label><input type="checkbox" name="kinds" value="nonprofit"><span>Nonprofit</span></label>
                 <label><input type="checkbox" name="kinds" value="other"><span>Other</span></label>
               </div>
+              <label class="field" data-kind-other hidden>
+                <span class="optional">What kind?</span>
+                <input name="kindsOther" maxlength="80" placeholder="Salons, contractors, schools…">
+              </label>
             </fieldset>
 
             <fieldset data-if="checkout-templates">
@@ -764,10 +766,11 @@
               <div class="chips" data-industries></div>
             </fieldset>
 
-            <label class="pilot">
-              <input type="checkbox" name="pilot">
-              <span>I'd bring merchants to a pilot of my #1<small>We'll reach out when there's one to try.</small></span>
-            </label>
+            <fieldset data-pilots>
+              <legend>I'd bring merchants to a pilot of <span class="optional">(optional)</span></legend>
+              <div class="chips" data-pilot-chips></div>
+              <small>We'll reach out when there's one to try.</small>
+            </fieldset>
 
             <div class="who">
               <label class="field"><span>Your name</span><input name="name" autocomplete="name" maxlength="80"></label>
@@ -908,16 +911,19 @@
     const trayNote = tray.querySelector('.tray-note');
     const panelNote = form.querySelector('.panel-note');
     const calm = matchMedia('(prefers-reduced-motion: reduce)');
+    // Which of their picks they'd bring merchants to a pilot of.
+    let pilots = new Set();
 
     // Template industries use the same list as merchant kinds.
     form.querySelector('[data-industries]').innerHTML = form.querySelector('[data-kinds]').innerHTML.replaceAll('name="kinds"', 'name="industries"');
 
-    // The line under the picks: the picks so far, or what went wrong.
+    // The tray's second line: the picks so far, or what went wrong. The ballot lists the
+    // picks already, so it only shows what went wrong.
     function note(text, bad) {
-      [trayNote, panelNote].forEach(el => {
-        el.textContent = text;
-        el.classList.toggle('bad', Boolean(bad));
-      });
+      trayNote.textContent = text;
+      trayNote.classList.toggle('bad', Boolean(bad));
+      panelNote.textContent = bad ? text : '';
+      panelNote.classList.toggle('bad', Boolean(bad));
     }
 
     function showWho(known) {
@@ -926,9 +932,11 @@
       form.querySelector('[data-who]').textContent = voter.office ? `${voter.name} · ${voter.office}` : voter.name;
     }
 
-    // The ballot's heading and the picks in order, with an empty slot for each pick to come.
+    // The ballot's heading and the picks in tap order, one line each, with an arrow to move
+    // a pick up. The cards show the same numbers, so the order is never a surprise.
     function showOrder() {
       const sent = ballot && same(picks, ballot.ranking);
+      const left = PLACES - picks.length;
       panel.querySelector('#panel-title').textContent =
         !picks.length ? 'Pick an idea to start' :
         picks.length === 1 ? 'Your pick' :
@@ -936,16 +944,19 @@
       panel.querySelector('[data-sub]').textContent =
         !picks.length ? '' :
         picks.length === 1 ? 'Ranking two or three against each other tells us more about what to build first.' :
-        'Top is what your merchants need most. Use the arrows to move them.';
+        '#1 is what your merchants need most. The arrow moves a pick up.';
       order.innerHTML = picks.map((id, i) => `
         <li data-id="${id}">
           <span class="num">${i + 1}</span>
           <span>${title(id)}</span>
           <button class="step" type="button" data-move="-1" aria-label="Move ${title(id)} up"${i ? '' : ' disabled'}>&uarr;</button>
-          <button class="step" type="button" data-move="1" aria-label="Move ${title(id)} down"${i < picks.length - 1 ? '' : ' disabled'}>&darr;</button>
-        </li>`).join('') +
-        Array.from({ length: PLACES - picks.length }, (_, i) => `
-        <li class="slot" aria-hidden="true"><span class="num">${picks.length + i + 1}</span><span>${picks.length + i ? 'Add another idea' : 'Tap an idea'}</span></li>`).join('');
+        </li>`).join('');
+      form.querySelector('.order-left').textContent =
+        !picks.length || !left ? '' : `Room for ${left} more${left === 1 ? '' : ' picks'}: tap another idea.`;
+      // A pilot chip for each pick, keeping what's already ticked.
+      form.querySelector('[data-pilots]').hidden = !picks.length;
+      form.querySelector('[data-pilot-chips]').innerHTML = picks.map(id => `
+        <label><input type="checkbox" name="pilots" value="${id}"${pilots.has(id) ? ' checked' : ''}><span>${short(id)}</span></label>`).join('');
       form.querySelectorAll('[data-if]').forEach(el => { el.hidden = !picks.includes(el.dataset.if); });
       form.querySelector('[data-why-title]').textContent = picks.length > 1 ? 'Why these products?' : 'Why this product?';
       form.querySelector('[data-why]').textContent =
@@ -972,8 +983,8 @@
         const button = c.querySelector('.pick');
         c.classList.toggle('picked', picked);
         button.setAttribute('aria-pressed', picked);
-        button.textContent = picked ? '✓ Picked' : full ? "You've picked 3" : c.dataset.idea === 'other' ? 'Add your own idea' : 'Add to my picks';
-        button.setAttribute('aria-label', `${title(c.dataset.idea)}: ${picked ? 'picked. Tap to take it out.' : 'add to your picks'}`);
+        button.textContent = picked ? `✓ Picked #${picks.indexOf(c.dataset.idea) + 1}` : full ? "You've picked 3" : c.dataset.idea === 'other' ? 'Add your own idea' : 'Add to my picks';
+        button.setAttribute('aria-label', `${title(c.dataset.idea)}: ${picked ? `your #${picks.indexOf(c.dataset.idea) + 1}. Tap to take it out.` : 'add to your picks'}`);
       });
       // The intro says what to do, so the tray waits for the first pick.
       const sent = ballot && same(picks, ballot.ranking);
@@ -1018,23 +1029,35 @@
           if (shift) li.animate([{ translate: `0 ${shift}px` }, { translate: '0 0' }], { duration: 350, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
         });
       }
-      // Keep focus on the idea that moved.
+      // Keep focus on the idea that moved, or on the list once it's at the top.
       const moved = order.children[to];
-      (moved.querySelector(`[data-move="${button.dataset.move}"]:enabled`) || moved.querySelector('[data-move]:enabled'))?.focus();
+      (moved.querySelector('[data-move]:enabled') || panel.querySelector('#panel-title')).focus();
+    });
+
+    // "Other" kinds get a box to say what kind; pilot ticks are kept across re-renders.
+    function showKindOther() {
+      form.querySelector('[data-kind-other]').hidden = !form.querySelector('[name="kinds"][value="other"]').checked;
+    }
+
+    form.addEventListener('change', e => {
+      if (e.target.name === 'kinds') showKindOther();
+      if (e.target.name === 'pilots') pilots[e.target.checked ? 'add' : 'delete'](e.target.value);
     });
 
     // The form, filled in from the ranking this phone already sent, if there is one.
     function fillForm() {
       form.reset();
       error.textContent = '';
+      pilots = new Set(ballot ? ballot.pilots : []);
       if (ballot) {
         field('text').value = ballot.text;
         field('why').value = ballot.why;
-        field('pilot').checked = ballot.pilot;
+        field('kindsOther').value = ballot.kindsOther || '';
         form.querySelectorAll('[name="size"]').forEach(input => { input.checked = input.value === ballot.size; });
         form.querySelectorAll('[name="kinds"]').forEach(input => { input.checked = ballot.kinds.includes(input.value); });
         form.querySelectorAll('[name="industries"]').forEach(input => { input.checked = ballot.industries.includes(input.value); });
       }
+      showKindOther();
       field('name').value = voter.name;
       field('office').value = voter.office;
       showWho(Boolean(voter.name));
@@ -1113,16 +1136,18 @@
 
       Object.assign(voter, { name, office });
       if (!KIOSK) saved.set('solacon2.voter', voter);
+      const kinds = checked('kinds');
       const body = {
         voter: voter.id,
         kiosk: KIOSK,
         ranking,
         text: ranking.includes('other') ? text : '',
         size,
-        kinds: checked('kinds'),
+        kinds,
+        kindsOther: kinds.includes('other') ? field('kindsOther').value.trim() : '',
         industries: ranking.includes('checkout-templates') ? checked('industries') : [],
         why: field('why').value.trim(),
-        pilot: field('pilot').checked,
+        pilots: ranking.filter(id => pilots.has(id)),
         name,
         office,
       };
