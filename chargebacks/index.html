@@ -709,27 +709,24 @@
 
     pickMonth(MONTHS.findIndex(m => m.best));
 
-    // Before and now, from the Chargeback Management dashboard: the first full month live
-    // against the latest full month.
-    // SAMPLE FIGURES until the real ones are filled in from the dashboard; then set sample to false.
+    // Before and now, from the Chargeback Management dashboard: April 1 to May 1 against the
+    // 30 days to Nov 3, 2026. Set sample to true to mark the figures as placeholders.
     const GAINS = {
-      sample: true,
-      was: 'March',
-      now: 'September',
+      sample: false,
+      was: 'April',
+      now: 'Last 30 days',
       rows: [
         // Days from the chargeback notice to the merchant's response. Lower is better.
-        { label: 'Time to respond', was: 9, now: 2, unit: 'days' },
+        { label: 'Time to respond', was: 17, now: 6.7, unit: 'days' },
         // Disputes won, as a share of disputes decided. Higher is better: the delta is in points.
-        { label: 'Win rate', was: 28, now: 44, unit: '%' },
-        // Second-stage disputes (the merchant lost the first response). Lower is better.
-        { label: 'Pre-arbitrations a month', was: 31, now: 12 },
+        { label: 'Win rate', was: 13.6, now: 40.1, unit: '%' },
       ],
     };
 
     const gains = document.querySelector('.gains');
     const figure = (row, n) => row.unit === '%' ? `${n}<small>%</small>` : row.unit ? `${count.format(n)}<small>${row.unit}</small>` : count.format(n);
     const delta = row => row.unit === '%'
-      ? `${row.now >= row.was ? '+' : '−'}${Math.abs(row.now - row.was)} pts`
+      ? `${row.now >= row.was ? '+' : '−'}${Number(Math.abs(row.now - row.was).toFixed(1))} pts`
       : `${row.now <= row.was ? '−' : '+'}${Math.round(Math.abs(row.now - row.was) / row.was * 100)}%`;
 
     gains.innerHTML = GAINS.rows.map(row => {
