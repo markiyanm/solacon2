@@ -27,7 +27,8 @@
       .top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr); }
     }
 
-    /* What it's worth: monthly credit card sales at a 3% surcharge. */
+    /* What it's worth: slide to the merchant's monthly credit card sales, and the saving
+       at a 3% surcharge shows underneath. */
     .worth {
       display: grid;
       gap: 0.4rem;
@@ -37,11 +38,32 @@
 
     .worth h2 { margin: 0; }
 
+    .worth label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      margin-top: 0.4rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .worth label output {
+      color: var(--text);
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
     .worth-figure {
       display: flex;
       flex-wrap: wrap;
       align-items: baseline;
       gap: 0 0.6rem;
+      margin-top: 0.5rem;
+      padding-top: 0.9rem;
+      border-top: 1px solid var(--line);
       color: var(--text-muted);
     }
 
@@ -53,17 +75,6 @@
       line-height: 1.2;
       font-variant-numeric: tabular-nums;
     }
-
-    .worth label {
-      display: flex;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-top: 0.4rem;
-      color: var(--text-muted);
-      font-size: 0.9rem;
-    }
-
-    .worth label output { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
 
     /* The slider's thumb is a Sola ring. */
     .worth input {
@@ -362,11 +373,11 @@
         <p class="lede">Merchants add a surcharge to credit card sales to cover the cost of accepting cards. Sola checks every sale against card brand rules, state rules, and the merchant's own rate before it adds a cent.</p>
 
         <section class="card worth" aria-labelledby="worth-title">
-          <h2 id="worth-title">Show a merchant what it's worth</h2>
-          <p class="worth-figure"><output id="worth-month">$1,200</output> a month to offset processing</p>
-          <label for="worth-range">Credit card sales a month <output id="worth-sales">$40,000</output></label>
+          <h2 id="worth-title">Show a merchant what they'd save</h2>
+          <label for="worth-range">If they process this much in credit card sales a month <output id="worth-sales">$40,000</output></label>
           <input id="worth-range" type="range" min="5000" max="250000" step="5000" value="40000">
-          <p class="note">At a 3% surcharge, that's <strong id="worth-year">$14,400</strong> a year. Debit, prepaid, and gift card sales don't count.</p>
+          <p class="worth-figure"><output id="worth-month">$1,200</output> a month saved with surcharging</p>
+          <p class="note">At a 3% surcharge, that's <strong id="worth-year">$14,400</strong> a year they no longer pay in processing. Debit, prepaid, and gift card sales don't count.</p>
         </section>
       </div>
 
@@ -445,7 +456,6 @@
           <li><strong>Flat rate pricing</strong>, not pass-through or tiered</li>
           <li><strong>Amex OptBlue</strong>, if they take Amex</li>
           <li><strong>No convenience or service fee</strong> on the account</li>
-          <li class="tbd"><strong>A processor</strong> that supports surcharging</li>
         </ul>
         <p class="note start">New account? Turn on <strong>Enable Surcharge</strong> on the application in the Partner Portal.</p>
       </section>
