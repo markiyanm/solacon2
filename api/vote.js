@@ -1,9 +1,27 @@
 // POST /api/vote/   send or replace a ranking:
-//   { voter, ranking: [1st, 2nd, 3rd], text, size, kinds, industries, why, pilot, name, office }
-// DELETE /api/vote/ take it back: { voter }
-// Both answer with the new tally, so the phone can say how the agent's #1 is doing.
+//   { voter, ranking: [1st, 2nd, 3rd], text, size, kinds, industries, why, pilot, name, office, kiosk }
+// DELETE /api/vote/ take it back: { voter, kiosk }
+// Both answer with the new tally, so the phone can say how the agent's #1 is doing, and
+// the id the ballot is filed under.
+//
+// One phone, one ballot: the answer sets a cookie with that id, and a later ballot from the
+// same phone replaces the first even if the browser has forgotten its id. The booth tablet
+// sends kiosk: true, takes a fresh id every time, and never gets the cookie.
 
 const { KEY, IDEAS, SIZES, KINDS, PLACES, redis, ballots, tally, text, fail } = require('./_store');
+
+const COOKIE = 'solacon2_voter';
+const VOTER_ID = /^[A-Za-z0-9-]{8,64}$/;
+
+function cookieVoter(req) {
+  const match = String(req.headers.cookie || '').match(new RegExp(`(?:^|;\\s*)${COOKIE}=([A-Za-z0-9-]{8,64})`));
+  return match ? match[1] : null;
+}
+
+function rememberVoter(req, res, voter) {
+  const secure = req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : '';
+  res.setHeader('Set-Cookie', `${COOKIE}=${voter}; Max-Age=31536000; Path=/; SameSite=Lax${secure}`);
+}
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST' && req.method !== 'DELETE') {
@@ -13,13 +31,15 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
 
   const body = req.body && typeof req.body === 'object' ? req.body : {};
-  const voter = String(body.voter ?? '');
-  if (!/^[A-Za-z0-9-]{8,64}$/.test(voter)) return res.status(400).json({ error: 'Missing voter id.' });
+  const kiosk = body.kiosk === true;
+  // The cookie's id wins over the one the page sent: that's where this phone's ballot is.
+  const voter = (!kiosk && cookieVoter(req)) || String(body.voter ?? '');
+  if (!VOTER_ID.test(voter)) return res.status(400).json({ error: 'Missing voter id.' });
 
   try {
     if (req.method === 'DELETE') {
       await redis('HDEL', KEY, voter);
-      return res.status(200).json(tally(await ballots()));
+      return res.status(200).json({ ...tally(await ballots()), voter });
     }
 
     const ranking = Array.isArray(body.ranking) ? body.ranking.map(String) : [];
@@ -49,7 +69,8 @@ module.exports = async (req, res) => {
     if (!ballot.name) return res.status(400).json({ error: 'Add your name.' });
 
     await redis('HSET', KEY, voter, JSON.stringify(ballot));
-    return res.status(200).json(tally(await ballots()));
+    if (!kiosk) rememberVoter(req, res, voter);
+    return res.status(200).json({ ...tally(await ballots()), voter });
   } catch (error) {
     return fail(res, error);
   }
