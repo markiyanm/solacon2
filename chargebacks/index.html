@@ -218,14 +218,21 @@
 
     .paper-case b { color: var(--ink); font-weight: 600; }
 
+    /* The live list sits on top of a hidden copy of the whole letter, so the card is always
+       as tall as the finished letter and the page never moves as lines are added. */
+    .paper-body { display: grid; }
+
+    .paper-body > * { grid-area: 1 / 1; }
+
     .paper-points {
       display: grid;
       align-content: start;
       gap: 0.1rem;
-      min-height: 10em;
       padding: 0;
       list-style: none;
     }
+
+    .paper-points.ghost { visibility: hidden; }
 
     .paper-points li {
       position: relative;
@@ -348,6 +355,121 @@
 
     .bar-caption { min-height: 3em; margin-top: 0.75rem; }
 
+    /* The bottom row: the monthly bars, who gets what (widest: two lists), and the gains. */
+    @media (min-width: 1000px) {
+      .cards { grid-template-columns: minmax(0, 1fr) minmax(0, 1.75fr) minmax(0, 0.95fr); }
+    }
+
+    /* Merchants get the wider column: their list is longer. */
+    .gets-cols {
+      display: grid;
+      gap: 1rem 1.25rem;
+    }
+
+    @media (min-width: 560px) {
+      .gets-cols { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+    }
+
+    .gets-cols h3 { margin-top: 0.25rem; color: var(--signal); }
+
+    .gets .checks { font-size: 0.88rem; }
+
+    /* Before and now, one line per figure: the number now, how far it moved, and a bar
+       where the lighter "before" shows through behind the blue "now". */
+    .gains-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.25rem 1rem;
+    }
+
+    .gains-head h2 { margin: 0; }
+
+    .gains-key {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem 1rem;
+      margin-top: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .gains-key span { display: flex; align-items: center; gap: 0.4rem; }
+
+    .gains-key i { width: 0.8rem; height: 0.5rem; border-radius: 3px; background: rgba(124, 157, 255, 0.28); }
+
+    .gains-key .now i { background: #3b74ff; }
+
+    .gains {
+      display: grid;
+      gap: 1rem;
+      margin: 1.1rem 0 0;
+    }
+
+    .gain {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 0.4rem 0.6rem;
+      align-items: baseline;
+    }
+
+    .gain dt {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .gain dd { margin: 0; }
+
+    .gain-now {
+      color: var(--text);
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .gain-now small {
+      margin-left: 0.1em;
+      font-size: 0.65em;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .gain-delta {
+      padding: 0.2em 0.7em;
+      border-radius: 999px;
+      background: rgba(0, 71, 255, 0.22);
+      color: #b3c6ff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .gain-bar {
+      position: relative;
+      grid-column: 1 / -1;
+      height: 0.5rem;
+    }
+
+    .gain-bar i {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: calc(var(--w) * 100%);
+      border-radius: 3px;
+      background: rgba(124, 157, 255, 0.28);
+    }
+
+    .gain-bar .now { background: #3b74ff; }
+
+    .entered .gain-bar .now { animation: grow 1.1s var(--ease-out) 0.9s both; }
+
+    @keyframes grow {
+      from { width: 0; }
+    }
+
     .cards .note { margin-top: 0.9rem; }
 
     .cards .start {
@@ -416,7 +538,10 @@
               <span class="paper-tag">Filled in for you</span>
             </div>
             <p class="paper-case"><span>Reason 13.1 · Services not received</span><b>$184.00</b></p>
-            <ul class="paper-points"></ul>
+            <div class="paper-body">
+              <ul class="paper-points"></ul>
+              <ul class="paper-points ghost" aria-hidden="true"></ul>
+            </div>
             <div class="paper-foot">
               <span class="count"></span>
               <b>Save and download</b>
@@ -434,25 +559,38 @@
         <p class="note bar-caption" aria-live="polite"></p>
       </section>
 
-      <section class="card">
-        <h2>What merchants get</h2>
-        <ul class="checks">
-          <li><strong>An email</strong> for every chargeback, with a link</li>
-          <li><strong>One click in</strong>, even without a portal login</li>
-          <li><strong>One list</strong> of every chargeback in the portal</li>
-          <li><strong>Transaction details</strong> filled in for them</li>
-          <li><strong>A letter preview</strong> before it goes to the bank</li>
-        </ul>
+      <section class="card gets">
+        <h2>Who gets what</h2>
+        <div class="gets-cols">
+          <div>
+            <h3>Merchants</h3>
+            <ul class="checks">
+              <li><strong>An email</strong> for every chargeback, with a link</li>
+              <li><strong>One click in</strong>, even without a portal login</li>
+              <li><strong>One list</strong> of every chargeback in the portal</li>
+              <li><strong>Transaction details</strong> filled in for them</li>
+              <li><strong>A letter preview</strong> before it goes to the bank</li>
+            </ul>
+          </div>
+          <div>
+            <h3>You</h3>
+            <ul class="checks">
+              <li><strong>New revenue</strong> from every plan, at your markup</li>
+              <li><strong>Self-service:</strong> merchants dispute in the portal</li>
+              <li><strong>No support tickets</strong> or EIDS logins</li>
+            </ul>
+          </div>
+        </div>
+        <p class="note start">Set your portfolio's monthly fee in <strong>QuickAssist</strong>.</p>
       </section>
 
-      <section class="card">
-        <h2>What you get</h2>
-        <ul class="checks">
-          <li><strong>New revenue</strong> from every plan, at your markup</li>
-          <li><strong>Self-service:</strong> merchants dispute in the portal</li>
-          <li><strong>No support tickets</strong> or EIDS logins</li>
-        </ul>
-        <p class="note start">Set your portfolio's monthly fee in <strong>QuickAssist</strong>.</p>
+      <section class="card stats" aria-labelledby="gains-title">
+        <div class="gains-head">
+          <h2 id="gains-title">Faster, and winning more</h2>
+          <span class="badge badge--outline" data-sample hidden>Sample figures</span>
+        </div>
+        <p class="gains-key"><span class="was"><i></i><span data-was></span></span><span class="now"><i></i><span data-now></span></span></p>
+        <dl class="gains"></dl>
       </section>
     </div>
   </main>
@@ -473,7 +611,9 @@
 
     const demo = document.querySelector('.letter-demo');
     const evidence = demo.querySelector('.evidence');
-    const points = demo.querySelector('.paper-points');
+    const points = demo.querySelector('.paper-points:not(.ghost)');
+    // The finished letter, hidden, holds the card at its full height (see .paper-body).
+    demo.querySelector('.paper-points.ghost').innerHTML = EVIDENCE.map(e => `<li>${e.line}</li>`).join('');
     const have = new Set();
 
     evidence.innerHTML = EVIDENCE
@@ -568,6 +708,42 @@
     });
 
     pickMonth(MONTHS.findIndex(m => m.best));
+
+    // Before and now, from the Chargeback Management dashboard: April 1 to May 1 against the
+    // 30 days to Nov 3, 2026. Set sample to true to mark the figures as placeholders.
+    const GAINS = {
+      sample: false,
+      was: 'April',
+      now: 'Last 30 days',
+      rows: [
+        // Days from the chargeback notice to the merchant's response. Lower is better.
+        { label: 'Time to respond', was: 17, now: 6.7, unit: 'days' },
+        // Disputes won, as a share of disputes decided. Higher is better: the delta is in points.
+        { label: 'Win rate', was: 13.6, now: 40.1, unit: '%' },
+      ],
+    };
+
+    const gains = document.querySelector('.gains');
+    const figure = (row, n) => row.unit === '%' ? `${n}<small>%</small>` : row.unit ? `${count.format(n)}<small>${row.unit}</small>` : count.format(n);
+    const delta = row => row.unit === '%'
+      ? `${row.now >= row.was ? '+' : '−'}${Number(Math.abs(row.now - row.was).toFixed(1))} pts`
+      : `${row.now <= row.was ? '−' : '+'}${Math.round(Math.abs(row.now - row.was) / row.was * 100)}%`;
+
+    gains.innerHTML = GAINS.rows.map(row => {
+      const most = Math.max(row.was, row.now, 1);
+      return `
+        <div class="gain">
+          <dt>${row.label}</dt>
+          <dd class="gain-now">${figure(row, row.now)}</dd>
+          <dd><span class="gain-delta">${delta(row)}</span></dd>
+          <dd class="gain-bar" aria-label="${GAINS.was}: ${row.was}${row.unit || ''}. ${GAINS.now}: ${row.now}${row.unit || ''}.">
+            <i class="was" style="--w: ${row.was / most}"></i><i class="now" style="--w: ${row.now / most}"></i>
+          </dd>
+        </div>`;
+    }).join('');
+    document.querySelector('[data-was]').textContent = GAINS.was;
+    document.querySelector('[data-now]').textContent = GAINS.now;
+    document.querySelector('[data-sample]').hidden = !GAINS.sample;
   </script>
 </body>
 </html>
