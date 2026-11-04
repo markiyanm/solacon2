@@ -4,7 +4,7 @@
 // video: the slide has a video[data-slide-video]; /present moves on when it ends instead of on a timer.
 // qr: the booth's QR code goes to this page instead of the start, with its own caption.
 const SOLA_PAGES = [
-  { path: '/', title: 'SolaCon 2', ring: { x: 82, y: 36, size: 64 } },
+  { path: '/', title: 'SolaCon 2026', ring: { x: 82, y: 36, size: 64 } },
   { path: '/terminal/', title: 'Sola Terminal', ring: { x: 97, y: 90, size: 58 }, video: true },
   { path: '/terminal/devices/', title: 'Sola Terminal devices', ring: { x: 98, y: 4, size: 34 } },
   { path: '/checkout/', title: 'Sola Checkout', ring: { x: 4, y: 98, size: 56 } },
