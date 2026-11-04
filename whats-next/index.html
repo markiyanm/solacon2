@@ -19,7 +19,7 @@
     .idea p { flex: 1; }
 
     /* The whole card is the button: tap to pick it, tap again to take it out. No numbers
-       yet: the agent puts their picks in order as its own step, in the sheet. */
+       on the cards: the agent puts their picks in order in the ballot beside them. */
     .pick {
       align-self: flex-start;
       margin-top: 1.25rem;
@@ -58,6 +58,7 @@
     .full .idea:not(.picked) .pick { color: var(--text-muted); }
 
     .suggest {
+      margin-top: 1.25rem;
       border-style: dashed;
       background: transparent;
     }
@@ -65,45 +66,151 @@
     .turnout { margin-top: 1rem; }
     .turnout:empty { display: none; }
 
-    /* Your picks so far, pinned to the bottom of the screen from the first pick on: a small
-       floating pill, or a slim bar along the bottom of a phone. */
+    /* Booth tablet: a small pill saying so, so nobody wonders why the page forgets them. */
+    .kiosk-pill {
+      display: none;
+      margin-top: 1rem;
+      padding: 0.3em 0.9em;
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 1px var(--line);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .kiosk .kiosk-pill { display: inline-block; }
+
+    /* The ideas and the ballot side by side. The ballot column opens on the right on a
+       wide screen as soon as the first idea is picked; on a phone it slides in over the
+       page when the agent taps Next. */
+    .vote {
+      display: grid;
+      gap: 2rem;
+      align-items: start;
+      transition: grid-template-columns 0.45s var(--ease-out);
+    }
+
+    .ideas-col { min-width: 0; }
+
+    @media (min-width: 900px) {
+      .vote.open { grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem); }
+      .vote.open .ideas { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .panel {
+      position: sticky;
+      top: 1.25rem;
+      max-height: calc(100vh - 2.5rem);
+      max-height: calc(100dvh - 2.5rem);
+      overflow: auto;
+      overscroll-behavior: contain;
+      padding: 1.5rem;
+      background: rgba(10, 18, 56, 0.9);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      backdrop-filter: blur(16px) saturate(140%);
+      border: 1px solid var(--line);
+      border-radius: 1.25rem;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1rem 2.5rem rgba(1, 6, 35, 0.5);
+    }
+
+    .vote:not(.open) .panel { display: none; }
+
+    .vote.open .panel { animation: panel-in 0.45s var(--ease-out); }
+
+    @keyframes panel-in {
+      from { opacity: 0; translate: 1.5rem 0; }
+    }
+
+    .panel form,
+    .panel .done {
+      display: grid;
+      gap: 1.3rem;
+    }
+
+    /* After the display rules above, so a hidden form or thank-you stays hidden. */
+    .panel [hidden] { display: none; }
+
+    .panel-head { display: grid; gap: 0.35rem; }
+
+    .panel-head .mark { margin-bottom: 0.25rem; }
+
+    .panel h2 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    .panel-sub { color: var(--text-muted); }
+
+    .panel-sub:empty { display: none; }
+
+    /* Phones: the ballot slides in from the right and fills the screen. */
+    .back { display: none; }
+
+    @media (max-width: 899px) {
+      .panel {
+        position: fixed;
+        inset: 0;
+        z-index: 6;
+        max-height: none;
+        padding: 1.25rem var(--gutter) calc(2rem + env(safe-area-inset-bottom));
+        border: 0;
+        border-radius: 0;
+        background: #0a1238;
+        translate: 100% 0;
+        visibility: hidden;
+        transition: translate 0.4s var(--ease-out), visibility 0.4s;
+      }
+
+      .vote:not(.open) .panel { display: block; }
+
+      .vote.open .panel { translate: 0; visibility: visible; animation: none; }
+
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--signal);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .back::before { content: "\2190"; }
+    }
+
+    /* Picks so far, pinned to the bottom of a phone from the first pick on. */
     .tray {
       position: sticky;
-      bottom: 1.25rem;
+      bottom: 0;
       z-index: 2;
-      justify-self: center;
       display: flex;
       align-items: center;
       gap: 1.25rem;
-      width: min(100%, 30rem);
-      /* Or a long line of picks would stretch the page sideways. */
-      min-width: 0;
-      padding: 0.55rem 0.55rem 0.55rem 1.5rem;
-      background: rgba(10, 18, 56, 0.88);
+      margin: 0 calc(var(--gutter) * -1) -2rem;
+      padding: 0.75rem var(--gutter) calc(0.75rem + env(safe-area-inset-bottom));
+      background: rgba(10, 18, 56, 0.92);
       -webkit-backdrop-filter: blur(12px);
       backdrop-filter: blur(12px);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      box-shadow: 0 1rem 2.5rem rgba(1, 6, 35, 0.7);
+      border-top: 1px solid var(--line);
+      border-radius: 1.25rem 1.25rem 0 0;
+      box-shadow: 0 -0.5rem 2rem rgba(1, 6, 35, 0.6);
       animation: tray-in 0.45s var(--ease-out);
     }
 
     .tray[hidden] { display: none; }
 
-    @keyframes tray-in {
-      from { opacity: 0; translate: 0 1.5rem; }
+    @media (min-width: 900px) {
+      .tray { display: none; }
     }
 
-    @media (max-width: 700px) {
-      .tray {
-        bottom: 0;
-        justify-self: stretch;
-        width: auto;
-        margin: 0 calc(var(--gutter) * -1) -2rem;
-        padding: 0.75rem var(--gutter) calc(0.75rem + env(safe-area-inset-bottom));
-        border-width: 1px 0 0;
-        border-radius: 1.25rem 1.25rem 0 0;
-      }
+    @keyframes tray-in {
+      from { opacity: 0; translate: 0 1.5rem; }
     }
 
     .tray-text {
@@ -114,13 +221,17 @@
 
     .tray-count { font-weight: 600; }
 
-    .tray-note {
+    .tray-note,
+    .panel-note {
       color: var(--text-muted);
       font-size: 0.85rem;
     }
 
-    .tray-note:empty { display: none; }
-    .tray-note.bad { color: #ff9b9b; font-weight: 600; }
+    .tray-note:empty,
+    .panel-note:empty { display: none; }
+
+    .tray-note.bad,
+    .panel-note.bad { color: #ff9b9b; font-weight: 600; }
 
     .tray .button {
       flex: none;
@@ -147,98 +258,14 @@
     .live,
     .meter { display: none; }
 
-    /* The vote sheet: a bottom sheet on phones, a dialog on bigger screens. */
-    .sheet {
-      width: min(92vw, 34rem);
-      max-height: 92vh;
-      margin: auto;
-      padding: 0;
-      overflow: auto;
-      overscroll-behavior: contain;
-      background: #0a1238;
-      border: 1px solid var(--line);
-      border-radius: 1.5rem;
-      color: var(--text);
-    }
-
-    .sheet[open] { animation: sheet-in 0.45s var(--ease-out); }
-    .sheet::backdrop { background: rgba(1, 6, 35, 0.78); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-    .sheet[open]::backdrop { animation: fade 0.3s; }
-
-    @keyframes sheet-in {
-      from { opacity: 0; translate: 0 1.5rem; }
-    }
-
-    @media (max-width: 700px) {
-      .sheet {
-        width: 100vw;
-        max-width: none;
-        margin: auto 0 0;
-        border-radius: 1.5rem 1.5rem 0 0;
-        border-bottom: 0;
-      }
-
-      @keyframes sheet-in {
-        from { translate: 0 100%; }
-      }
-    }
-
-    .sheet form,
-    .sheet .done {
-      display: grid;
-      gap: 1.4rem;
-      padding: 1.75rem;
-    }
-
-    .sheet [hidden] { display: none; }
-
-    /* Two steps in one form: put the picks in order, then a little about the agent. */
-    .sheet [data-step]:not([hidden]) {
-      display: grid;
-      gap: 1.4rem;
-    }
-
-    .sheet-head { padding-right: 2.5rem; }
-
-    .sheet h2 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      letter-spacing: -0.02em;
-      line-height: 1.15;
-    }
-
-    .sheet-sub {
-      margin-top: 0.5rem;
-      color: var(--text-muted);
-    }
-
-    .sheet-sub:empty { display: none; }
-
-    .close {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      width: 2.5rem;
-      height: 2.5rem;
-      border: 0;
-      border-radius: 50%;
-      background: rgba(244, 246, 255, 0.1);
-      color: var(--text);
-      font-size: 1.4rem;
-      line-height: 1;
-      cursor: pointer;
-    }
-
-    .close:hover { background: rgba(244, 246, 255, 0.2); }
-
-    .sheet fieldset {
+    .panel fieldset {
       border: 0;
       padding: 0;
       margin: 0;
       min-width: 0;
     }
 
-    .sheet legend,
+    .panel legend,
     .field > span {
       display: block;
       margin-bottom: 0.55rem;
@@ -315,116 +342,101 @@
       font-size: 0.85rem;
     }
 
+    /* Name and office share one grid, so the two boxes line up even when a label wraps. */
     .who {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
+      grid-template-rows: auto auto;
+      grid-auto-flow: column;
+      align-items: end;
+      gap: 0 0.75rem;
     }
+
+    .who .field { display: contents; }
 
     @media (max-width: 480px) {
-      .who { grid-template-columns: 1fr; }
+      .who { grid-template-columns: 1fr; grid-auto-flow: row; gap: 0.75rem 0; }
     }
 
+    /* The picks in tap order, one line each; the arrow moves a pick up a place. */
     .order {
       list-style: none;
       padding: 0;
       display: grid;
-      gap: 0.5rem;
+      gap: 0.35rem;
     }
 
     .order li {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      padding: 0.7rem 0.6rem 0.7rem 0.9rem;
-      border-radius: 0.9rem;
+      gap: 0.55rem;
+      padding: 0.3rem 0.3rem 0.3rem 0.5rem;
+      border-radius: 0.7rem;
       background: rgba(244, 246, 255, 0.06);
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 600;
     }
 
     .order .num {
-      width: 2.1rem;
-      font-size: 1rem;
+      width: 1.5rem;
+      font-size: 0.8rem;
     }
 
-    .order li > span:not(.num) { flex: 1; min-width: 0; }
+    .order li > span:not(.num) {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
     .step {
       flex: none;
-      width: 2.5rem;
-      height: 2.5rem;
+      width: 1.9rem;
+      height: 1.9rem;
       border: 0;
       border-radius: 50%;
       background: rgba(244, 246, 255, 0.1);
       color: var(--text);
       font: inherit;
-      font-size: 1.1rem;
+      font-size: 1rem;
+      line-height: 1;
       cursor: pointer;
     }
 
     .step:hover { background: rgba(244, 246, 255, 0.2); }
     .step:disabled { visibility: hidden; }
 
-    .order-note {
-      margin-top: -0.6rem;
+    .order-left {
+      margin-top: -0.4rem;
       color: var(--text-muted);
       font-size: 0.85rem;
     }
 
-    /* Step 2: the order they chose, small, with a way back. */
-    .summary {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem 1rem;
-      padding-bottom: 1.2rem;
-      border-bottom: 1px solid var(--line);
+    .order-left:empty { display: none; }
+
+    .panel fieldset small {
+      display: block;
+      margin-top: 0.5rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
     }
 
-    .summary ol {
-      list-style: none;
-      padding: 0;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem 1rem;
+    .questions {
+      display: grid;
+      gap: 1.3rem;
+      padding-top: 1.3rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .questions h3 {
+      font-size: 1.1rem;
       font-weight: 600;
-    }
-
-    .summary li {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-
-    .summary .num {
-      width: 1.5rem;
-      font-size: 0.8rem;
+      letter-spacing: -0.01em;
     }
 
     .who-known { color: var(--text-muted); }
     .who-known b { color: var(--text); font-weight: 600; }
-
-    .pilot {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.7rem;
-      cursor: pointer;
-    }
-
-    .pilot input {
-      flex: none;
-      width: 1.25rem;
-      height: 1.25rem;
-      margin: 0.15rem 0 0;
-      accent-color: var(--sola-blue);
-    }
-
-    .pilot small {
-      display: block;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
 
     .error {
       color: #ff9b9b;
@@ -447,6 +459,8 @@
       font-weight: 600;
       cursor: pointer;
     }
+
+    .actions .button:disabled { opacity: 0.5; cursor: default; translate: none; }
 
     .link {
       padding: 0;
@@ -484,9 +498,13 @@
       gap: 3rem;
     }
 
+    .present .vote { display: block; }
+
     .present .pick,
     .present .idea.suggest,
     .present .tray,
+    .present .panel,
+    .present .kiosk-pill,
     .present .turnout { display: none; }
 
     .present .live { display: block; }
@@ -518,9 +536,12 @@
 
     .scan::after { content: "\00a0\2197"; }
 
+    /* The count waits until it's worth showing: more than ten agents. */
     .live.empty .counts,
+    .live.few .counts,
     .live.empty .key { display: none; }
-    .live.empty .scan { margin-top: 0; }
+    .live.empty .scan,
+    .live.few .scan { margin-top: 0; }
 
     .present .ideas {
       display: flex;
@@ -575,23 +596,23 @@
     .p2 { background: #4f7bff; }
     .p3 { background: #2b4596; }
 
+    /* How the points work, in a sentence, with the bar colors inline. */
     .key {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.4rem 1.5rem;
       margin-top: 1.5rem;
       color: var(--text-muted);
       font-size: 0.95rem;
+      line-height: 1.7;
     }
 
     .key i {
       display: inline-block;
       width: 0.85rem;
       height: 0.85rem;
-      margin-right: 0.45rem;
       border-radius: 3px;
       vertical-align: -0.1em;
     }
+
+    .key b { color: var(--text); font-weight: 600; }
 
     .meter b {
       min-width: 2.5ch;
@@ -625,60 +646,160 @@
       <h1>What should we build next?</h1>
       <p class="lede">These are ideas we're exploring, not promises. Pick up to three your merchants need most, then put them in order.</p>
       <p class="note turnout" aria-live="polite"></p>
+      <span class="kiosk-pill">Booth tablet: one agent at a time</span>
       <div class="live empty">
         <div class="counts">
           <p><b data-agents>0</b> agents ranked</p>
-          <p><b data-offices>0</b> offices</p>
         </div>
-        <p class="key"><span><i class="p1"></i>#1 pick: 3 points</span><span><i class="p2"></i>#2: 2</span><span><i class="p3"></i>#3: 1</span></p>
+        <p class="key">A <b>#1</b> pick <i class="p1"></i> is worth 3 points, <b>#2</b> <i class="p2"></i> is 2, and <b>#3</b> <i class="p3"></i> is 1.</p>
         <p class="scan">Scan the code to rank them from your phone</p>
       </div>
     </div>
 
-    <div class="ideas grid stagger grid--3">
-      <section class="card idea" data-idea="clerk-pos" data-short="Clerk POS">
-        <h2>Clerk POS</h2>
-        <p>A lightweight point of sale for desktop and tablet, with a catalog and inventory shared with Sola Collect.</p>
-        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
-        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
-      </section>
-      <section class="card idea" data-idea="terminal" data-short="Terminal">
-        <h2>Standalone Sola Terminal</h2>
-        <p><strong>Basic</strong> for everyday transactions, like a traditional terminal, or <strong>POS</strong> with the catalog and inventory on the terminal itself.</p>
-        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
-        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
-      </section>
-      <section class="card idea" data-idea="bnpl" data-short="BNPL">
-        <h2>Buy Now, Pay Later</h2>
-        <p>Customers pay in installments. Merchants get funded right away, through a BNPL partner.</p>
-        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
-        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
-      </section>
-      <section class="card idea" data-idea="cash-advance" data-short="Cash advance">
-        <h2>Merchant Cash Advance</h2>
-        <p>Funding for merchants, paid back over time, through a lending partner.</p>
-        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
-        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
-      </section>
-      <section class="card idea" data-idea="checkout-templates" data-short="Templates">
-        <h2>More Checkout templates</h2>
-        <p>Ready-made payment pages for more industries. Which ones should come next?</p>
-        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
-        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
-      </section>
-      <section class="card idea" data-idea="otc-cards" data-short="OTC cards">
-        <h2>OTC benefits cards</h2>
-        <p>Accept over-the-counter benefits cards at pharmacies, grocery stores, and convenience stores.</p>
-        <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
-        <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
-      </section>
-    </div>
+    <div class="vote">
+      <div class="ideas-col">
+        <div class="ideas grid stagger grid--3">
+          <section class="card idea" data-idea="clerk-pos" data-short="Clerk POS">
+            <h2>Clerk POS</h2>
+            <p>A lightweight point of sale for desktop and tablet, with a catalog and inventory shared with Sola Collect.</p>
+            <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+            <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
+          </section>
+          <section class="card idea" data-idea="terminal" data-short="Terminal">
+            <h2>Standalone Sola Terminal</h2>
+            <p><strong>Basic</strong> for everyday transactions, like a traditional terminal, or <strong>POS</strong> with the catalog and inventory on the terminal itself.</p>
+            <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+            <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
+          </section>
+          <section class="card idea" data-idea="bnpl" data-short="BNPL">
+            <h2>Buy Now, Pay Later</h2>
+            <p>Customers pay in installments. Merchants get funded right away, through a BNPL partner.</p>
+            <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+            <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
+          </section>
+          <section class="card idea" data-idea="cash-advance" data-short="Cash advance">
+            <h2>Merchant Cash Advance</h2>
+            <p>Funding for merchants, paid back over time, through a lending partner.</p>
+            <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+            <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
+          </section>
+          <section class="card idea" data-idea="checkout-templates" data-short="Templates">
+            <h2>More Checkout templates</h2>
+            <p>Ready-made payment pages for more industries. Which ones should come next?</p>
+            <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+            <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
+          </section>
+          <section class="card idea" data-idea="otc-cards" data-short="OTC cards">
+            <h2>OTC benefits cards</h2>
+            <p>Accept over-the-counter benefits cards at pharmacies, grocery stores, and convenience stores.</p>
+            <div class="meter" aria-hidden="true"><i><span><span class="p1"></span><span class="p2"></span><span class="p3"></span></span></i><b>0</b></div>
+            <button class="pick" type="button" aria-pressed="false">Add to my picks</button>
+          </section>
+        </div>
 
-    <section class="card idea suggest" data-idea="other" data-short="Your idea">
-      <h2>Something else?</h2>
-      <p>Something your merchants keep asking for that isn't here. You'll describe it after you put your picks in order.</p>
-      <button class="pick" type="button" aria-pressed="false">Add your own idea</button>
-    </section>
+        <section class="card idea suggest" data-idea="other" data-short="Your idea">
+          <h2>Something else?</h2>
+          <p>Something your merchants keep asking for that isn't here. You'll describe it in your ballot.</p>
+          <button class="pick" type="button" aria-pressed="false">Add your own idea</button>
+        </section>
+      </div>
+
+      <aside class="panel" aria-labelledby="panel-title">
+        <button class="back" type="button" data-back>Back to the ideas</button>
+
+        <form novalidate>
+          <div class="panel-head">
+            <p class="mark">Your ballot</p>
+            <h2 id="panel-title" tabindex="-1"></h2>
+            <p class="panel-sub" data-sub></p>
+          </div>
+
+          <ol class="order" aria-label="Your picks, in order"></ol>
+          <p class="order-left"></p>
+          <p class="panel-note" aria-live="polite"></p>
+
+          <div class="questions">
+            <h3 data-why-title></h3>
+
+            <label class="field" data-if="other">
+              <span>Your idea: what should we build?</span>
+              <textarea name="text" rows="3" maxlength="300" placeholder="What do your merchants keep asking for?"></textarea>
+            </label>
+
+            <label class="field">
+              <span><span data-why></span> <span class="optional">(optional)</span></span>
+              <textarea name="why" rows="2" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
+              <small>Leave out account numbers and card details.</small>
+            </label>
+
+            <fieldset>
+              <legend>How many merchants do you work with?</legend>
+              <div class="chips">
+                <label><input type="radio" name="size" value="few"><span>Fewer than 10</span></label>
+                <label><input type="radio" name="size" value="dozens"><span>10 to 50</span></label>
+                <label><input type="radio" name="size" value="many"><span>More than 50</span></label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>What kinds? <span class="optional">(optional)</span></legend>
+              <div class="chips" data-kinds>
+                <label><input type="checkbox" name="kinds" value="retail"><span>Retail</span></label>
+                <label><input type="checkbox" name="kinds" value="restaurant"><span>Restaurants</span></label>
+                <label><input type="checkbox" name="kinds" value="grocery"><span>Grocery</span></label>
+                <label><input type="checkbox" name="kinds" value="pharmacy"><span>Pharmacy</span></label>
+                <label><input type="checkbox" name="kinds" value="medical"><span>Medical</span></label>
+                <label><input type="checkbox" name="kinds" value="auto"><span>Auto</span></label>
+                <label><input type="checkbox" name="kinds" value="services"><span>Services</span></label>
+                <label><input type="checkbox" name="kinds" value="ecommerce"><span>Ecommerce</span></label>
+                <label><input type="checkbox" name="kinds" value="nonprofit"><span>Nonprofit</span></label>
+                <label><input type="checkbox" name="kinds" value="other"><span>Other</span></label>
+              </div>
+              <label class="field" data-kind-other hidden>
+                <span class="optional">What kind?</span>
+                <input name="kindsOther" maxlength="80" placeholder="Salons, contractors, schools…">
+              </label>
+            </fieldset>
+
+            <fieldset data-if="checkout-templates">
+              <legend>Which industries need a Checkout template? <span class="optional">(optional)</span></legend>
+              <div class="chips" data-industries></div>
+            </fieldset>
+
+            <fieldset data-pilots>
+              <legend>I'd bring merchants to a pilot of <span class="optional">(optional)</span></legend>
+              <div class="chips" data-pilot-chips></div>
+              <small>We'll reach out when there's one to try.</small>
+            </fieldset>
+
+            <div class="who">
+              <label class="field"><span>Your name</span><input name="name" autocomplete="name" maxlength="80"></label>
+              <label class="field"><span>Office or ISO <span class="optional">(optional)</span></span><input name="office" autocomplete="organization" maxlength="80"></label>
+            </div>
+            <p class="who-known" hidden>Ranking as <b data-who></b> <button class="link" type="button" data-change-who>Change</button></p>
+
+            <p class="error" role="alert"></p>
+
+            <div class="actions">
+              <button class="button" type="submit"></button>
+              <button class="link" type="button" data-remove hidden>Remove my ranking</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="done" hidden>
+          <div class="done-mark" aria-hidden="true">&#10003;</div>
+          <div>
+            <h2 tabindex="-1" data-done-title></h2>
+            <p data-done-text></p>
+          </div>
+          <div class="actions">
+            <button class="button" type="button" data-next-agent hidden>Next agent</button>
+            <button class="link" type="button" data-edit>Change my ranking</button>
+          </div>
+        </div>
+      </aside>
+    </div>
 
     <aside class="tray" aria-label="Your picks" hidden>
       <div class="tray-text" aria-live="polite">
@@ -689,107 +810,17 @@
     </aside>
   </main>
 
-  <dialog class="sheet" aria-labelledby="sheet-title">
-    <button class="close" type="button" aria-label="Close">&times;</button>
-    <form novalidate>
-      <div class="sheet-head">
-        <p class="mark" data-kicker></p>
-        <h2 id="sheet-title" tabindex="-1"></h2>
-        <p class="sheet-sub" data-sub></p>
-      </div>
-
-      <div data-step="order">
-        <ol class="order" aria-label="Your picks, in order"></ol>
-        <p class="order-note">Use the arrows to move them.</p>
-        <div class="actions">
-          <button class="button" type="button" data-to="about">Next</button>
-          <button class="link" type="button" data-change-picks></button>
-        </div>
-      </div>
-
-      <div data-step="about" hidden>
-        <div class="summary">
-          <ol aria-label="Your ranking"></ol>
-          <button class="link" type="button" data-to="order"></button>
-        </div>
-
-        <label class="field" data-if="other">
-          <span>Your idea: what should we build?</span>
-          <textarea name="text" rows="3" maxlength="300" placeholder="What do your merchants keep asking for?"></textarea>
-        </label>
-
-        <label class="field">
-          <span><span data-why></span> <span class="optional">(optional)</span></span>
-          <textarea name="why" rows="3" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
-          <small>Leave out account numbers and card details.</small>
-        </label>
-
-        <fieldset>
-          <legend>How many merchants do you work with?</legend>
-          <div class="chips">
-            <label><input type="radio" name="size" value="few"><span>Fewer than 10</span></label>
-            <label><input type="radio" name="size" value="dozens"><span>10 to 50</span></label>
-            <label><input type="radio" name="size" value="many"><span>More than 50</span></label>
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend>What kinds? <span class="optional">(optional)</span></legend>
-          <div class="chips" data-kinds>
-            <label><input type="checkbox" name="kinds" value="retail"><span>Retail</span></label>
-            <label><input type="checkbox" name="kinds" value="restaurant"><span>Restaurants</span></label>
-            <label><input type="checkbox" name="kinds" value="grocery"><span>Grocery</span></label>
-            <label><input type="checkbox" name="kinds" value="pharmacy"><span>Pharmacy</span></label>
-            <label><input type="checkbox" name="kinds" value="medical"><span>Medical</span></label>
-            <label><input type="checkbox" name="kinds" value="auto"><span>Auto</span></label>
-            <label><input type="checkbox" name="kinds" value="services"><span>Services</span></label>
-            <label><input type="checkbox" name="kinds" value="ecommerce"><span>Ecommerce</span></label>
-            <label><input type="checkbox" name="kinds" value="nonprofit"><span>Nonprofit</span></label>
-            <label><input type="checkbox" name="kinds" value="other"><span>Other</span></label>
-          </div>
-        </fieldset>
-
-        <fieldset data-if="checkout-templates">
-          <legend>Which industries need a Checkout template? <span class="optional">(optional)</span></legend>
-          <div class="chips" data-industries></div>
-        </fieldset>
-
-        <label class="pilot">
-          <input type="checkbox" name="pilot">
-          <span>I'd bring merchants to a pilot of my #1<small>We'll reach out when there's one to try.</small></span>
-        </label>
-
-        <div class="who">
-          <label class="field"><span>Your name</span><input name="name" autocomplete="name" maxlength="80"></label>
-          <label class="field"><span>Office or ISO <span class="optional">(optional)</span></span><input name="office" autocomplete="organization" maxlength="80"></label>
-        </div>
-        <p class="who-known" hidden>Ranking as <b data-who></b> <button class="link" type="button" data-change-who>Change</button></p>
-
-        <p class="error" role="alert"></p>
-
-        <div class="actions">
-          <button class="button" type="submit"></button>
-          <button class="link" type="button" data-remove hidden>Remove my ranking</button>
-        </div>
-      </div>
-    </form>
-
-    <div class="done" hidden>
-      <div class="done-mark" aria-hidden="true">&#10003;</div>
-      <div>
-        <h2 tabindex="-1" data-done-title></h2>
-        <p data-done-text></p>
-      </div>
-      <div class="actions"><button class="button" type="button" data-back>Back to the ideas</button></div>
-    </div>
-  </dialog>
-
   <nav class="page-nav" aria-label="Pages"></nav>
 
   <script>
     // Each agent sends one ranking to /api/vote/ (see api/vote.js): up to three ideas, in
-    // order. The phone keeps its own id, name, and office, the ranking it last sent, the
-    // picks it's working on, and a ranking still waiting to send.
+    // order. The phone keeps its own id (the server also sets it as a cookie, so one phone
+    // is one ballot even if the browser's storage is cleared), the agent's name and office,
+    // the ranking it last sent, the picks it's working on, and a ranking still waiting to send.
+    //
+    // The booth tablet opens the page with ?kiosk once: from then on it takes one ballot
+    // after another, with a fresh id each time, and forgets everything after each one is
+    // sent. ?kiosk=off turns that back off.
     const PLACES = 3;
     const saved = {
       get(key, fallback) {
@@ -800,15 +831,25 @@
       },
     };
 
-    const voter = saved.get('solacon2.voter', null) || {
-      id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2),
-      name: '',
-      office: '',
-    };
-    saved.set('solacon2.voter', voter);
-    let ballot = saved.get('solacon2.ranking', null);
-    let pending = saved.get('solacon2.pending-ranking', null);
-    let picks = saved.get('solacon2.picks', null) || (ballot ? [...ballot.ranking] : []);
+    const params = new URLSearchParams(location.search);
+    if (params.has('kiosk')) {
+      saved.set('solacon2.kiosk', params.get('kiosk') !== 'off');
+      // Whatever a ballot left in this browser before, the tablet starts clean.
+      ['solacon2.voter', 'solacon2.ranking', 'solacon2.pending-ranking', 'solacon2.picks'].forEach(key => saved.set(key, null));
+    }
+    const KIOSK = saved.get('solacon2.kiosk', false) === true;
+    document.documentElement.classList.toggle('kiosk', KIOSK);
+
+    const newId = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+    const cookieVoter = () => (document.cookie.match(/(?:^|;\s*)solacon2_voter=([A-Za-z0-9-]{8,64})/) || [])[1];
+
+    let voter = KIOSK ? { id: newId(), name: '', office: '' } : saved.get('solacon2.voter', null) || { id: newId(), name: '', office: '' };
+    // The cookie wins: it's the id this phone's ballot is already filed under.
+    if (!KIOSK && cookieVoter()) voter.id = cookieVoter();
+    if (!KIOSK) saved.set('solacon2.voter', voter);
+    let ballot = KIOSK ? null : saved.get('solacon2.ranking', null);
+    let pending = KIOSK ? null : saved.get('solacon2.pending-ranking', null);
+    let picks = KIOSK ? [] : saved.get('solacon2.picks', null) || (ballot ? [...ballot.ranking] : []);
 
     // A 4xx means the ranking itself is wrong, so it isn't retried; no answer or a 5xx is.
     async function send(method, body) {
@@ -833,13 +874,21 @@
       // Only clear it if a newer ranking didn't replace it while this one was sending.
       if (pending === job && (result.ok || !result.retry)) {
         pending = null;
-        saved.set('solacon2.pending-ranking', null);
+        if (!KIOSK) saved.set('solacon2.pending-ranking', null);
       }
-      if (result.ok) showTally(result.data);
+      if (result.ok) {
+        // The server may have filed it under the id this phone already had.
+        if (!KIOSK && result.data.voter && result.data.voter !== voter.id) {
+          voter.id = result.data.voter;
+          saved.set('solacon2.voter', voter);
+        }
+        showTally(result.data);
+      }
       return result;
     }
 
     const main = document.querySelector('main');
+    const vote = document.querySelector('.vote');
     const cards = [...document.querySelectorAll('.idea[data-idea]')];
     const card = id => cards.find(c => c.dataset.idea === id);
     const title = id => card(id).querySelector('h2').firstChild.textContent;
@@ -847,20 +896,86 @@
     const same = (a, b) => a.length === b.length && a.every((id, i) => id === b[i]);
     const sameSet = (a, b) => a.length === b.length && a.every(id => b.includes(id));
 
-    // Tapping a card picks it or takes it out. Picks keep the order they were tapped in,
-    // but the cards don't show it: the agent sets the order in the sheet.
+    // The ballot opens beside the ideas on a wide screen, and over them on a phone.
+    const wide = matchMedia('(min-width: 900px)');
+    let panelOpen = false;
+    const panel = document.querySelector('.panel');
+    const form = panel.querySelector('form');
+    const field = name => form.elements.namedItem(name);
+    const checked = name => [...form.querySelectorAll(`[name="${name}"]:checked`)].map(input => input.value);
+    const done = panel.querySelector('.done');
+    const error = form.querySelector('.error');
+    const order = form.querySelector('.order');
     const tray = document.querySelector('.tray');
     const trayCount = tray.querySelector('.tray-count');
     const trayNote = tray.querySelector('.tray-note');
+    const panelNote = form.querySelector('.panel-note');
+    const calm = matchMedia('(prefers-reduced-motion: reduce)');
+    // Which of their picks they'd bring merchants to a pilot of.
+    let pilots = new Set();
 
-    // The tray's second line: the picks so far, or what went wrong.
+    // Template industries use the same list as merchant kinds.
+    form.querySelector('[data-industries]').innerHTML = form.querySelector('[data-kinds]').innerHTML.replaceAll('name="kinds"', 'name="industries"');
+
+    // The tray's second line: the picks so far, or what went wrong. The ballot lists the
+    // picks already, so it only shows what went wrong.
     function note(text, bad) {
       trayNote.textContent = text;
       trayNote.classList.toggle('bad', Boolean(bad));
+      panelNote.textContent = bad ? text : '';
+      panelNote.classList.toggle('bad', Boolean(bad));
+    }
+
+    function showWho(known) {
+      form.querySelector('.who').hidden = known;
+      form.querySelector('.who-known').hidden = !known;
+      form.querySelector('[data-who]').textContent = voter.office ? `${voter.name} · ${voter.office}` : voter.name;
+    }
+
+    // The ballot's heading and the picks in tap order, one line each, with an arrow to move
+    // a pick up. The cards show the same numbers, so the order is never a surprise.
+    function showOrder() {
+      const sent = ballot && same(picks, ballot.ranking);
+      const left = PLACES - picks.length;
+      panel.querySelector('#panel-title').textContent =
+        !picks.length ? 'Pick an idea to start' :
+        picks.length === 1 ? 'Your pick' :
+        picks.length < PLACES ? `Your top ${picks.length}` : 'Your top 3';
+      panel.querySelector('[data-sub]').textContent =
+        !picks.length ? '' :
+        picks.length === 1 ? 'Ranking two or three against each other tells us more about what to build first.' :
+        '#1 is what your merchants need most. The arrow moves a pick up.';
+      order.innerHTML = picks.map((id, i) => `
+        <li data-id="${id}">
+          <span class="num">${i + 1}</span>
+          <span>${title(id)}</span>
+          <button class="step" type="button" data-move="-1" aria-label="Move ${title(id)} up"${i ? '' : ' disabled'}>&uarr;</button>
+        </li>`).join('');
+      form.querySelector('.order-left').textContent =
+        !picks.length || !left ? '' : `Room for ${left} more${left === 1 ? '' : ' picks'}: tap another idea.`;
+      // A pilot chip for each pick, keeping what's already ticked.
+      form.querySelector('[data-pilots]').hidden = !picks.length;
+      form.querySelector('[data-pilot-chips]').innerHTML = picks.map(id => `
+        <label><input type="checkbox" name="pilots" value="${id}"${pilots.has(id) ? ' checked' : ''}><span>${short(id)}</span></label>`).join('');
+      form.querySelectorAll('[data-if]').forEach(el => { el.hidden = !picks.includes(el.dataset.if); });
+      form.querySelector('[data-why-title]').textContent = picks.length > 1 ? 'Why these products?' : 'Why this product?';
+      form.querySelector('[data-why]').textContent =
+        !picks.length ? 'Why your #1?' :
+        picks[0] === 'other' ? 'Why is your idea your #1?' : `Why is ${title(picks[0])} your #1?`;
+      form.querySelector('[type="submit"]').textContent = ballot ? (sent ? 'Ranking sent' : 'Update my ranking') : 'Send my ranking';
+      form.querySelector('[type="submit"]').disabled = !picks.length || Boolean(sent);
+      form.querySelector('[data-remove]').hidden = !ballot;
+    }
+
+    function layout() {
+      const open = wide.matches ? Boolean(picks.length || ballot) : panelOpen;
+      vote.classList.toggle('open', open);
+      // On a phone the ballot covers the page, so the page stops scrolling underneath it.
+      document.body.style.overflow = open && !wide.matches ? 'hidden' : '';
     }
 
     function paint() {
-      saved.set('solacon2.picks', picks);
+      if (!KIOSK) saved.set('solacon2.picks', picks);
       const full = picks.length >= PLACES;
       main.classList.toggle('full', full);
       cards.forEach(c => {
@@ -868,8 +983,8 @@
         const button = c.querySelector('.pick');
         c.classList.toggle('picked', picked);
         button.setAttribute('aria-pressed', picked);
-        button.textContent = picked ? '✓ Picked' : full ? "You've picked 3" : c.dataset.idea === 'other' ? 'Add your own idea' : 'Add to my picks';
-        button.setAttribute('aria-label', `${title(c.dataset.idea)}: ${picked ? 'picked. Tap to take it out.' : 'add to your picks'}`);
+        button.textContent = picked ? `✓ Picked #${picks.indexOf(c.dataset.idea) + 1}` : full ? "You've picked 3" : c.dataset.idea === 'other' ? 'Add your own idea' : 'Add to my picks';
+        button.setAttribute('aria-label', `${title(c.dataset.idea)}: ${picked ? `your #${picks.indexOf(c.dataset.idea) + 1}. Tap to take it out.` : 'add to your picks'}`);
       });
       // The intro says what to do, so the tray waits for the first pick.
       const sent = ballot && same(picks, ballot.ranking);
@@ -881,6 +996,8 @@
         ballot && sameSet(picks, ballot.ranking) ? "Your new order isn't sent yet." :
         `${picks.length} of ${PLACES} picked`;
       note(picks.map(short).join(' · '));
+      showOrder();
+      layout();
     }
 
     function toggle(id) {
@@ -890,67 +1007,12 @@
       else picks.push(id);
       // Back to the ideas they sent: bring back the order they sent them in, too.
       if (ballot && sameSet(picks, ballot.ranking)) picks = [...ballot.ranking];
+      // Changing the picks means the ballot is being edited: the form, not the thank-you.
+      showForm();
       paint();
     }
 
     cards.forEach(c => c.querySelector('.pick').addEventListener('click', () => toggle(c.dataset.idea)));
-
-    // The sheet, in two steps: put the picks in order, then why, and a little about the
-    // agent and their merchants.
-    const sheet = document.querySelector('.sheet');
-    const form = sheet.querySelector('form');
-    const field = name => form.elements.namedItem(name);
-    const checked = name => [...form.querySelectorAll(`[name="${name}"]:checked`)].map(input => input.value);
-    const done = sheet.querySelector('.done');
-    const error = form.querySelector('.error');
-    const order = form.querySelector('.order');
-    const calm = matchMedia('(prefers-reduced-motion: reduce)');
-
-    // Template industries use the same list as merchant kinds.
-    form.querySelector('[data-industries]').innerHTML = form.querySelector('[data-kinds]').innerHTML.replaceAll('name="kinds"', 'name="industries"');
-
-    function showWho(known) {
-      form.querySelector('.who').hidden = known;
-      form.querySelector('.who-known').hidden = !known;
-      form.querySelector('[data-who]').textContent = voter.office ? `${voter.name} · ${voter.office}` : voter.name;
-    }
-
-    // Step 1 asks only for the order. With one pick there's nothing to order, so it nudges
-    // for more instead: two or three ranked against each other tell us more.
-    const STEPS = {
-      order: () => picks.length > 1
-        ? ['Step 1 of 2', 'Now put them in order', 'Top is what your merchants need most.']
-        : ['Step 1 of 2', 'Just one pick?', 'Ranking two or three against each other tells us more about what to build first.'],
-      about: () => ['Step 2 of 2', picks.length > 1 ? 'Why these products?' : 'Why this product?', ''],
-    };
-
-    function showStep(step) {
-      const [kicker, heading, sub] = STEPS[step]();
-      sheet.querySelector('[data-kicker]').textContent = kicker;
-      sheet.querySelector('#sheet-title').textContent = heading;
-      sheet.querySelector('[data-sub]').textContent = sub;
-      form.querySelectorAll('[data-step]').forEach(el => { el.hidden = el.dataset.step !== step; });
-      sheet.scrollTop = 0;
-    }
-
-    function showOrder() {
-      order.innerHTML = picks.map((id, i) => `
-        <li data-id="${id}">
-          <span class="num">${i + 1}</span>
-          <span>${title(id)}</span>
-          <button class="step" type="button" data-move="-1" aria-label="Move ${title(id)} up"${i ? '' : ' disabled'}>&uarr;</button>
-          <button class="step" type="button" data-move="1" aria-label="Move ${title(id)} down"${i < picks.length - 1 ? '' : ' disabled'}>&darr;</button>
-        </li>`).join('');
-      order.nextElementSibling.hidden = picks.length < 2;
-      form.querySelector('[data-change-picks]').textContent = picks.length > 1 ? 'Change my picks' : 'Add more ideas';
-    }
-
-    function showAbout() {
-      form.querySelector('.summary ol').innerHTML = picks.map((id, i) => `<li><span class="num">${i + 1}</span>${short(id)}</li>`).join('');
-      form.querySelector('.summary [data-to]').textContent = picks.length > 1 ? 'Change order' : 'Back';
-      form.querySelectorAll('[data-if]').forEach(el => { el.hidden = !picks.includes(el.dataset.if); });
-      form.querySelector('[data-why]').textContent = picks[0] === 'other' ? 'Why is your idea your #1?' : `Why is ${title(picks[0])} your #1?`;
-    }
 
     order.addEventListener('click', e => {
       const button = e.target.closest('[data-move]');
@@ -960,7 +1022,6 @@
       const before = new Map([...order.children].map(li => [li.dataset.id, li.getBoundingClientRect().top]));
       [picks[from], picks[to]] = [picks[to], picks[from]];
       paint();
-      showOrder();
       // Slide the two rows past each other, so it's clear what moved.
       if (!calm.matches) {
         [...order.children].forEach(li => {
@@ -968,48 +1029,68 @@
           if (shift) li.animate([{ translate: `0 ${shift}px` }, { translate: '0 0' }], { duration: 350, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
         });
       }
-      // Keep focus on the idea that moved.
+      // Keep focus on the idea that moved, or on the list once it's at the top.
       const moved = order.children[to];
-      (moved.querySelector(`[data-move="${button.dataset.move}"]:enabled`) || moved.querySelector('[data-move]:enabled'))?.focus();
+      (moved.querySelector('[data-move]:enabled') || panel.querySelector('#panel-title')).focus();
     });
 
-    form.querySelectorAll('[data-to]').forEach(button => button.addEventListener('click', () => {
-      if (button.dataset.to === 'about') showAbout();
-      showStep(button.dataset.to);
-      sheet.querySelector('#sheet-title').focus();
-    }));
-    form.querySelector('[data-change-picks]').addEventListener('click', () => sheet.close());
+    // "Other" kinds get a box to say what kind; pilot ticks are kept across re-renders.
+    function showKindOther() {
+      form.querySelector('[data-kind-other]').hidden = !form.querySelector('[name="kinds"][value="other"]').checked;
+    }
 
-    function openSheet() {
-      if (!picks.length) return note('Pick at least one idea first.', true);
+    form.addEventListener('change', e => {
+      if (e.target.name === 'kinds') showKindOther();
+      if (e.target.name === 'pilots') pilots[e.target.checked ? 'add' : 'delete'](e.target.value);
+    });
+
+    // The form, filled in from the ranking this phone already sent, if there is one.
+    function fillForm() {
       form.reset();
       error.textContent = '';
-      form.hidden = false;
-      done.hidden = true;
+      pilots = new Set(ballot ? ballot.pilots : []);
       if (ballot) {
         field('text').value = ballot.text;
         field('why').value = ballot.why;
-        field('pilot').checked = ballot.pilot;
+        field('kindsOther').value = ballot.kindsOther || '';
         form.querySelectorAll('[name="size"]').forEach(input => { input.checked = input.value === ballot.size; });
         form.querySelectorAll('[name="kinds"]').forEach(input => { input.checked = ballot.kinds.includes(input.value); });
         form.querySelectorAll('[name="industries"]').forEach(input => { input.checked = ballot.industries.includes(input.value); });
       }
+      showKindOther();
       field('name').value = voter.name;
       field('office').value = voter.office;
       showWho(Boolean(voter.name));
-      form.querySelector('[type="submit"]').textContent = ballot ? 'Update my ranking' : 'Send my ranking';
-      form.querySelector('[data-remove]').hidden = !ballot;
-      showOrder();
-      showStep('order');
-      sheet.showModal();
+    }
+
+    function showForm() {
+      form.hidden = false;
+      done.hidden = true;
+    }
+
+    // On a phone: the tray's Next opens the ballot over the page; Back closes it.
+    function openPanel() {
+      if (!picks.length && !ballot) return note('Pick at least one idea first.', true);
+      panelOpen = true;
+      paint();
+      panel.scrollTop = 0;
+      (form.hidden ? panel.querySelector('[data-done-title]') : panel.querySelector('#panel-title')).focus();
+    }
+
+    function closePanel() {
+      panelOpen = false;
+      layout();
     }
 
     function finish(heading, text) {
-      sheet.querySelector('[data-done-title]').textContent = heading;
-      sheet.querySelector('[data-done-text]').textContent = text;
+      panel.querySelector('[data-done-title]').textContent = heading;
+      panel.querySelector('[data-done-text]').textContent = text;
+      panel.querySelector('[data-next-agent]').hidden = !KIOSK;
+      panel.querySelector('[data-edit]').hidden = KIOSK;
       form.hidden = true;
       done.hidden = false;
-      sheet.querySelector('[data-done-title]').focus();
+      panel.scrollTop = 0;
+      panel.querySelector('[data-done-title]').focus();
     }
 
     function firstLine(id, tally) {
@@ -1017,6 +1098,20 @@
       const others = (tally.ideas?.[id]?.places[0] || 1) - 1;
       if (others < 1) return `You're the first agent to put ${title(id)} first.`;
       return `${others.toLocaleString()} other agent${others === 1 ? '' : 's'} put ${title(id)} first too.`;
+    }
+
+    // Booth tablet: after each ballot, clear everything for the next agent.
+    let resetTimer;
+    function nextAgent() {
+      clearTimeout(resetTimer);
+      voter = { id: newId(), name: '', office: '' };
+      ballot = null;
+      picks = [];
+      panelOpen = false;
+      fillForm();
+      showForm();
+      paint();
+      window.scrollTo({ top: 0, behavior: calm.matches ? 'auto' : 'smooth' });
     }
 
     form.addEventListener('submit', async e => {
@@ -1028,6 +1123,7 @@
       const text = field('text').value.trim();
 
       const problem =
+        (!ranking.length && [cards[0].querySelector('.pick'), 'Pick at least one idea.']) ||
         (ranking.includes('other') && !text && [field('text'), 'Tell us what your idea is.']) ||
         (!size && [form.querySelector('[name="size"]'), 'Pick how many merchants you work with.']) ||
         (!name && [field('name'), 'Add your name.']);
@@ -1039,16 +1135,19 @@
       }
 
       Object.assign(voter, { name, office });
-      saved.set('solacon2.voter', voter);
+      if (!KIOSK) saved.set('solacon2.voter', voter);
+      const kinds = checked('kinds');
       const body = {
         voter: voter.id,
+        kiosk: KIOSK,
         ranking,
         text: ranking.includes('other') ? text : '',
         size,
-        kinds: checked('kinds'),
+        kinds,
+        kindsOther: kinds.includes('other') ? field('kindsOther').value.trim() : '',
         industries: ranking.includes('checkout-templates') ? checked('industries') : [],
         why: field('why').value.trim(),
-        pilot: field('pilot').checked,
+        pilots: ranking.filter(id => pilots.has(id)),
         name,
         office,
       };
@@ -1056,7 +1155,7 @@
       const submit = form.querySelector('[type="submit"]');
       submit.disabled = true;
       pending = { method: 'POST', body };
-      saved.set('solacon2.pending-ranking', pending);
+      if (!KIOSK) saved.set('solacon2.pending-ranking', pending);
       const result = await flush();
       submit.disabled = false;
 
@@ -1065,20 +1164,23 @@
         return;
       }
       ballot = body;
-      saved.set('solacon2.ranking', ballot);
+      if (!KIOSK) saved.set('solacon2.ranking', ballot);
       paint();
-      if (result?.ok) finish('Your top 3 is in. Thank you.', firstLine(ranking[0], result.data));
+      const what = ranking.length > 1 ? `Your top ${ranking.length} is in.` : 'Your pick is in.';
+      if (result?.ok) finish(`${what} Thank you.`, firstLine(ranking[0], result.data));
       else finish('Saved on your phone', "No connection right now. It'll send on its own when you're back online.");
+      if (KIOSK) resetTimer = setTimeout(nextAgent, 12000);
     });
 
     form.querySelector('[data-remove]').addEventListener('click', () => {
       ballot = null;
       picks = [];
-      saved.set('solacon2.ranking', null);
-      pending = { method: 'DELETE', body: { voter: voter.id } };
-      saved.set('solacon2.pending-ranking', pending);
+      if (!KIOSK) saved.set('solacon2.ranking', null);
+      pending = { method: 'DELETE', body: { voter: voter.id, kiosk: KIOSK } };
+      if (!KIOSK) saved.set('solacon2.pending-ranking', pending);
+      panelOpen = false;
+      fillForm();
       paint();
-      sheet.close();
       flush();
     });
 
@@ -1087,26 +1189,35 @@
       showWho(false);
       field('name').focus();
     });
-    tray.querySelector('[data-next]').addEventListener('click', openSheet);
-    sheet.querySelector('.close').addEventListener('click', () => sheet.close());
-    sheet.querySelector('[data-back]').addEventListener('click', () => sheet.close());
-    sheet.addEventListener('click', e => { if (e.target === sheet) sheet.close(); });
+    tray.querySelector('[data-next]').addEventListener('click', openPanel);
+    panel.querySelector('[data-back]').addEventListener('click', closePanel);
+    panel.querySelector('[data-edit]').addEventListener('click', () => {
+      showForm();
+      panel.scrollTop = 0;
+      panel.querySelector('#panel-title').focus();
+    });
+    panel.querySelector('[data-next-agent]').addEventListener('click', nextAgent);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && panelOpen && !wide.matches) closePanel();
+    });
+    wide.addEventListener('change', layout);
 
     // The tally: turnout under the intro on phones. On the booth, each idea's points split
     // by place, the ideas ranked by points, and the one with the most #1 picks marked.
     const ideasList = document.querySelector('.ideas');
     const live = document.querySelector('.live');
+    // A count under ten agents says more about the hour than the ideas, so it waits.
+    const SHOW_COUNT_FROM = 11;
 
     function showTally(tally) {
       if (!tally || !tally.ideas) return;
-      const { agents, offices } = tally;
-      const plural = (n, word) => `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`;
+      const { agents } = tally;
       main.classList.remove('no-tally');
       main.classList.toggle('no-votes', !agents);
-      document.querySelector('.turnout').textContent = agents ? `${plural(agents, 'agent')} ${agents === 1 ? 'has' : 'have'} ranked so far.` : '';
+      document.querySelector('.turnout').textContent = agents >= SHOW_COUNT_FROM ? `${agents.toLocaleString()} agents have ranked so far.` : '';
       live.classList.toggle('empty', !agents);
+      live.classList.toggle('few', agents < SHOW_COUNT_FROM);
       live.querySelector('[data-agents]').textContent = agents.toLocaleString();
-      live.querySelector('[data-offices]').textContent = offices.toLocaleString();
       live.querySelector('.scan').textContent = agents ? 'Scan the code to rank them from your phone' : 'Be the first: scan the code to rank them';
       if (SOLA_PRESENTING) rank(tally.ideas);
     }
@@ -1158,7 +1269,10 @@
     }
 
     // The booth shows the tally only, never a ranking someone tried on its browser.
-    if (!SOLA_PRESENTING) paint();
+    if (!SOLA_PRESENTING) {
+      fillForm();
+      paint();
+    }
     flush().then(refresh);
     window.addEventListener('online', () => flush());
 
@@ -1168,7 +1282,7 @@
       setInterval(() => { if (showing) refresh(); }, 5000);
       window.addEventListener('message', e => {
         if (e.origin !== location.origin) return;
-        if (e.data.type === 'enter') { showing = true; sheet.close(); refresh(); }
+        if (e.data.type === 'enter') { showing = true; refresh(); }
         if (e.data.type === 'leave') showing = false;
       });
     }

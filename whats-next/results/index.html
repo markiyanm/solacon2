@@ -104,23 +104,26 @@
     .p2 { background: #4f7bff; }
     .p3 { background: #2b4596; }
 
-    .legend {
+    /* Which offices the ballots came from, most ballots first. */
+    .where[hidden] { display: none; }
+
+    .offices {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.4rem 1.25rem;
-      margin-bottom: 0.5rem;
-      color: var(--text-muted);
-      font-size: 0.85rem;
+      gap: 0.5rem;
     }
 
-    .legend i {
-      display: inline-block;
-      width: 0.8rem;
-      height: 0.8rem;
-      margin-right: 0.4rem;
-      border-radius: 3px;
-      vertical-align: -0.1em;
+    .offices span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35em 0.9em;
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      font-weight: 600;
     }
+
+    .offices b { color: var(--signal); font-variant-numeric: tabular-nums; }
 
     /* Head to head: blue where the row's idea usually won, red where it usually lost. */
     .versus { width: auto; }
@@ -205,14 +208,14 @@
 
       <div class="stats"></div>
 
+      <section class="where" hidden>
+        <h2 class="section">Where the votes are</h2>
+        <div class="offices"></div>
+      </section>
+
       <section>
         <h2 class="section">Points by idea</h2>
-        <p class="explain">A #1 pick is worth 3 points, #2 is 2, and #3 is 1. "In top 3" is the share of agents who ranked the idea at all.</p>
-        <div class="legend">
-          <span><i class="p1"></i>From #1 picks</span>
-          <span><i class="p2"></i>#2</span>
-          <span><i class="p3"></i>#3</span>
-        </div>
+        <p class="explain">A #1 pick is worth 3 points, #2 is 2, and #3 is 1. The bar under each idea splits its points the same way, brightest for #1 picks. "In top 3" is the share of agents who ranked the idea at all.</p>
         <div class="table-wrap"><table class="by-idea"></table></div>
       </section>
 
@@ -239,6 +242,8 @@
 
   <script>
     const PLACES = 3;
+    // A count under ten agents says more about the hour than the ideas, so it waits.
+    const SHOW_COUNT_FROM = 11;
     const IDEAS = {
       'clerk-pos': 'Clerk POS',
       terminal: 'Standalone Sola Terminal',
@@ -251,7 +256,11 @@
     const SHORT = { 'clerk-pos': 'Clerk POS', terminal: 'Terminal', bnpl: 'BNPL', 'cash-advance': 'Cash advance', 'checkout-templates': 'Templates', 'otc-cards': 'OTC cards' };
     const SIZES = { few: 'Fewer than 10', dozens: '10 to 50', many: 'More than 50' };
     const KINDS = { retail: 'Retail', restaurant: 'Restaurants', grocery: 'Grocery', pharmacy: 'Pharmacy', medical: 'Medical', auto: 'Auto', services: 'Services', ecommerce: 'Ecommerce', nonprofit: 'Nonprofit', other: 'Other' };
-    const kindNames = kinds => kinds.map(kind => KINDS[kind] || kind).join(', ');
+    // "Other" shows what they typed, when they did.
+    const kindNames = (kinds, other) => kinds.map(kind => (kind === 'other' && other ? `Other: ${other}` : KINDS[kind] || kind)).join(', ');
+    // Ballots from before pilots were per pick offered a pilot of their #1.
+    const pilotsOf = b => b.pilots || (b.pilot ? [b.ranking[0]] : []);
+    const pilotNames = b => pilotsOf(b).map(id => SHORT[id] || ideaName(id)).join(', ');
     const ideaName = id => IDEAS[id] || id || '';
 
     // Everything agents typed is escaped before it's shown.
@@ -306,13 +315,26 @@
       document.querySelector('[data-showing]').textContent =
         agents === data.ballots.length ? '' : `Showing ${agents} of ${data.ballots.length} agents`;
 
-      const offices = new Set(ballots.map(b => (b.office || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()).filter(Boolean));
       const stat = (n, one, many) => `<p><b>${n}</b> ${n === 1 ? one : many}</p>`;
       document.querySelector('.stats').innerHTML =
-        stat(agents, 'agent', 'agents') +
-        stat(offices.size, 'office', 'offices') +
-        stat(ballots.filter(b => b.pilot).length, 'pilot offer', 'pilot offers') +
+        (agents >= SHOW_COUNT_FROM ? stat(agents, 'agent', 'agents') : '') +
+        stat(ballots.filter(b => pilotsOf(b).length).length, 'pilot offer', 'pilot offers') +
         stat(ballots.filter(b => b.ranking.includes('other')).length, 'own idea', 'own ideas');
+
+      // Where the ballots came from: each office as the first agent spelled it, with its count.
+      const offices = new Map();
+      ballots.forEach(b => {
+        const key = (b.office || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        if (!key) return;
+        const office = offices.get(key) || { name: b.office.trim(), n: 0 };
+        office.n++;
+        offices.set(key, office);
+      });
+      const where = document.querySelector('.where');
+      where.hidden = !offices.size;
+      where.querySelector('.offices').innerHTML = [...offices.values()]
+        .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))
+        .map(o => `<span>${esc(o.name)}<b>${o.n}</b></span>`).join('');
 
       const rows = Object.keys(IDEAS).map(id => {
         const places = Array(PLACES).fill(0);
@@ -322,13 +344,13 @@
         });
         const points = places.reduce((sum, n, place) => sum + n * (PLACES - place), 0);
         const ranked = places.reduce((sum, n) => sum + n, 0);
-        const pilots = ballots.filter(b => b.pilot && b.ranking[0] === id).length;
+        const pilots = ballots.filter(b => pilotsOf(b).includes(id)).length;
         return { id, places, points, ranked, pilots };
       }).sort((a, b) => b.points - a.points || b.places[0] - a.places[0] || b.places[1] - a.places[1]);
       const most = Math.max(1, ...rows.map(r => r.points));
 
       document.querySelector('.by-idea').innerHTML = `
-        <thead><tr><th>Idea</th><th class="num">Points</th><th class="num">#1</th><th class="num">#2</th><th class="num">#3</th><th class="num">In top 3</th><th class="num">Pilot offers for their #1</th></tr></thead>
+        <thead><tr><th>Idea</th><th class="num">Points</th><th class="num">#1</th><th class="num">#2</th><th class="num">#3</th><th class="num">In top 3</th><th class="num">Pilot offers</th></tr></thead>
         <tbody>${rows.map(r => `
           <tr>
             <td>${ideaName(r.id)}
@@ -387,24 +409,24 @@
             <td>${esc(b.office) || '—'}</td>
             ${Array.from({ length: PLACES }, (_, place) => `<td>${esc(ideaName(b.ranking[place])) || '—'}</td>`).join('')}
             <td>${esc(SIZES[b.size] || '—')}</td>
-            <td>${esc(kindNames(b.kinds)) || '—'}</td>
+            <td>${esc(kindNames(b.kinds, b.kindsOther)) || '—'}</td>
             <td class="notes">${[
               b.why && `<b>Why their #1:</b> ${esc(b.why)}`,
               b.text && `<b>Their idea:</b> ${esc(b.text)}`,
               b.industries?.length && `<b>Templates for:</b> ${esc(kindNames(b.industries))}`,
             ].filter(Boolean).join('<br>') || '—'}</td>
-            <td>${b.pilot ? 'Yes' : ''}</td>
+            <td>${esc(pilotNames(b))}</td>
           </tr>`).join('') || `<tr><td colspan="10">No rankings${agents === data.ballots.length ? ' yet' : ' match these filters'}.</td></tr>`}</tbody>`;
     }
 
     function csv() {
       // A leading = + - or @ would make a spreadsheet run the cell as a formula.
       const cell = value => `"${String(value ?? '').replace(/^[=+\-@]/, "'$&").replace(/"/g, '""')}"`;
-      const lines = [['When', 'Agent', 'Office', '#1', '#2', '#3', 'Merchants', 'Kinds', 'Why their #1', 'Their idea', 'Templates for', 'Pilot']]
+      const lines = [['When', 'Agent', 'Office', '#1', '#2', '#3', 'Merchants', 'Kinds', 'Why their #1', 'Their idea', 'Templates for', 'Pilot of']]
         .concat(shown().map(b => [
           b.at, b.name, b.office,
           ...Array.from({ length: PLACES }, (_, place) => ideaName(b.ranking[place])),
-          SIZES[b.size] || '', kindNames(b.kinds), b.why, b.text, kindNames(b.industries || []), b.pilot ? 'Yes' : '',
+          SIZES[b.size] || '', kindNames(b.kinds, b.kindsOther), b.why, b.text, kindNames(b.industries || []), pilotNames(b),
         ]));
       const blob = new Blob(['﻿' + lines.map(line => line.map(cell).join(',')).join('\r\n')], { type: 'text/csv' });
       const link = document.createElement('a');
