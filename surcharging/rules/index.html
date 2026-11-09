@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Surcharging rules | SolaCon 2026</title>
+  <meta name="description" content="What a surcharge is, the card brand and state rules behind it, the cost of getting it wrong, alternatives where it isn't permitted, and a quick eligibility check.">
+  <meta name="theme-color" content="#010623">
+  <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css">
+  <script src="/assets/site.js"></script>
+  <script src="/assets/surcharge.js"></script>
+  <style>
+    :root {
+      /* "Not permitted" and the cost of getting it wrong: the one warm color on the page. */
+      --stop: #ff8f80;
+      --icon-check: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+      --icon-cross: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.6' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E");
+      --field: rgba(1, 6, 35, 0.55);
+    }
+
+    .top {
+      display: grid;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (min-width: 1000px) {
+      .top { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
+    }
+
+    .jump {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 0.6rem;
+      margin-top: 0.75rem;
+    }
+
+    /* The eligibility check: answer for the merchant and the result updates as you go. */
+    .checker {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .checker-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+    }
+
+    .checker h2 { margin: 0; }
+
+    .reset {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--signal);
+      font: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .field {
+      display: grid;
+      gap: 0.4rem;
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .field.wide { grid-column: 1 / -1; }
+
+    .field > label,
+    .field legend {
+      padding: 0;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    .field legend { margin-bottom: 0.4rem; }
+
+    .checker select,
+    .checker input[type="number"] {
+      padding: 0.55em 0.9em;
+      border: 0;
+      border-radius: 0.75rem;
+      background: var(--field);
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.95rem;
+      transition: box-shadow 0.2s;
+    }
+
+    .checker select {
+      width: 100%;
+      padding-right: 2.4em;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c9dff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.85em center;
+      background-size: 1em;
+      cursor: pointer;
+    }
+
+    .checker select:hover,
+    .checker input[type="number"]:hover { box-shadow: inset 0 0 0 1.5px rgba(124, 157, 255, 0.45); }
+
+    .checker option { background: #0a1238; }
+
+    /* Radio buttons drawn as chips. */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .chip { position: relative; }
+
+    .chip input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .chip span {
+      display: inline-block;
+      padding: 0.4em 1em;
+      border-radius: 999px;
+      box-shadow: inset 0 0 0 1.5px var(--line);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .chip:hover span { background: rgba(124, 157, 255, 0.12); }
+
+    .chip input:checked + span {
+      background: var(--sola-blue);
+      box-shadow: inset 0 0 0 1.5px var(--sola-blue);
+    }
+
+    .chip input:focus-visible + span {
+      outline: 3px solid var(--signal);
+      outline-offset: 3px;
+    }
+
+    /* Their flat rate shows up beside the pricing chips once Flat rate is picked. */
+    .rate {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-left: 0.4rem;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      animation: fade 0.4s var(--ease-out);
+    }
+
+    .rate[hidden] { display: none; }
+
+    .rate input {
+      width: 5.5em;
+      padding: 0.35em 0.7em;
+    }
+
+    .result {
+      display: grid;
+      align-content: start;
+      gap: 0.75rem;
+      min-height: 9rem;
+      padding: 1.1rem 1.25rem;
+      border-radius: 1rem;
+      background: var(--field);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+
+    .result[data-kind="empty"] { place-content: center; text-align: center; }
+
+    .pill {
+      justify-self: start;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.3em 0.95em;
+      border-radius: 999px;
+      background: var(--sola-blue);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .pill::before {
+      content: "";
+      width: 0.85em;
+      aspect-ratio: 1;
+      background: currentColor;
+      -webkit-mask: var(--icon-check) center / contain no-repeat;
+      mask: var(--icon-check) center / contain no-repeat;
+    }
+
+    [data-kind="pending"] .pill,
+    [data-kind="fix"] .pill {
+      background: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--signal);
+      color: var(--signal);
+    }
+
+    [data-kind="pending"] .pill::before { display: none; }
+
+    [data-kind="no"] .pill {
+      background: transparent;
+      box-shadow: inset 0 0 0 1.5px var(--stop);
+      color: var(--stop);
+    }
+
+    [data-kind="no"] .pill::before,
+    [data-kind="fix"] .pill::before {
+      -webkit-mask-image: var(--icon-cross);
+      mask-image: var(--icon-cross);
+    }
+
+    .stamp .pill { animation: stamp 0.5s var(--ease-out); }
+
+    @keyframes stamp {
+      from { opacity: 0; scale: 1.3; }
+    }
+
+    .result-rate {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 0.6rem;
+      color: var(--text-muted);
+    }
+
+    .result-rate strong {
+      color: var(--text);
+      font-size: 2.4rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .result p { color: var(--text-muted); font-size: 0.9rem; text-wrap: pretty; }
+
+    .result p strong { color: var(--text); font-weight: 600; }
+
+    .result .checks li { font-size: 0.9rem; }
+
+    .result .button { justify-self: start; margin-top: 0.25rem; }
+
+    /* Something to change, or not permitted: a cross instead of a check. */
+    .checks .is-no::before {
+      top: 0.35em;
+      left: 0;
+      width: 0.85em;
+      height: 0.85em;
+      border: 0;
+      transform: none;
+      background: var(--stop);
+      -webkit-mask: var(--icon-cross) center / contain no-repeat;
+      mask: var(--icon-cross) center / contain no-repeat;
+    }
+
+    .result-next {
+      padding-top: 0.75rem;
+      border-top: 1px dashed rgba(124, 157, 255, 0.35);
+    }
+
+    /* Sections below the fold. */
+    .section {
+      display: grid;
+      gap: 1.25rem;
+      padding-top: 2.5rem;
+      scroll-margin-top: 1rem;
+    }
+
+    .section-head h2 {
+      font-size: clamp(1.6rem, 2.6vw, 2.25rem);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      text-wrap: balance;
+    }
+
+    .section-head .note {
+      max-width: 46em;
+      margin-top: 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 300;
+    }
+
+    .section .card h3 {
+      margin: 0 0 0.6rem;
+      font-size: 1.15rem;
+      letter-spacing: -0.01em;
+    }
+
+    .section .card { display: flex; flex-direction: column; }
+
+    /* What Sola does about each rule, at the foot of its card. */
+    .handled {
+      margin-top: auto;
+      padding-top: 0.9rem;
+      font-size: 0.9rem;
+    }
+
+    .handled::before {
+      content: "";
+      display: block;
+      margin-bottom: 0.9rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .card .handled strong { color: var(--signal); font-weight: 600; }
+
+    .section .checks { margin-bottom: 0.25rem; }
+
+    /* A fee added at the register, beside Sola Surcharging. */
+    .versus-card { padding: 0.5rem 0.75rem; }
+
+    .versus {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .versus th,
+    .versus td {
+      padding: 0.85rem 0.75rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .versus tbody tr:last-child > * { border-bottom: 0; }
+
+    .versus thead th {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .versus thead .good { color: var(--text); font-weight: 600; }
+
+    .versus tbody th {
+      width: 9rem;
+      font-weight: 600;
+    }
+
+    .versus tbody td {
+      position: relative;
+      padding-left: 2.25rem;
+      color: var(--text-muted);
+    }
+
+    .versus tbody td::before {
+      content: "";
+      position: absolute;
+      top: 1.15rem;
+      left: 0.75rem;
+      width: 0.85rem;
+      aspect-ratio: 1;
+      -webkit-mask: var(--icon-cross) center / contain no-repeat;
+      mask: var(--icon-cross) center / contain no-repeat;
+      background: var(--stop);
+    }
+
+    .versus td.good::before {
+      -webkit-mask-image: var(--icon-check);
+      mask-image: var(--icon-check);
+      background: var(--signal);
+    }
+
+    .versus td.good { color: var(--text); }
+
+    .versus .who { display: none; }
+
+    @media (max-width: 700px) {
+      .versus thead { display: none; }
+      .versus tr { display: grid; padding: 0.4rem 0; border-bottom: 1px solid var(--line); }
+      .versus tbody tr:last-child { border-bottom: 0; }
+      .versus th, .versus td { width: auto; padding-top: 0.4rem; padding-bottom: 0.4rem; border: 0; }
+      .versus tbody td::before { top: 1.65rem; }
+      .versus .who { display: block; color: var(--text-muted); font-size: 0.75rem; font-weight: 500; }
+    }
+
+    .risk h3 {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    /* A warm cross in a ring. */
+    .risk h3::before {
+      content: "";
+      flex: none;
+      width: 1.6rem;
+      aspect-ratio: 1;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff8f80'%3E%3Ccircle cx='12' cy='12' r='11' fill='%23ff8f80' fill-opacity='0.14' stroke-opacity='0.5' stroke-width='1.2'/%3E%3Cpath d='M8.8 8.8l6.4 6.4M15.2 8.8l-6.4 6.4' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+    }
+
+    /* A $100 item under each alternative. */
+    .mini {
+      display: grid;
+      gap: 0.35rem;
+      margin-top: auto;
+      padding-top: 1rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mini div {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .mini div:first-child {
+      padding-top: 0.75rem;
+      border-top: 1px dashed rgba(124, 157, 255, 0.35);
+    }
+
+    .mini dd { margin: 0; color: var(--text); font-weight: 600; }
+
+    .section > .fine { max-width: 52em; }
+
+    .entered .checker { animation: fade-up 0.8s var(--ease-out) 0.35s both; }
+
+    .entered .jump { animation: fade-up 0.8s var(--ease-out) 0.5s both; }
+
+    /* On the booth screen: no form, and the Surcharging slide before this one already
+       covers the rules, so it's the comparison, the risks, and the alternatives on one
+       screen. The top right corner is left to the QR code. */
+    .present .checker,
+    .present .lede,
+    .present .jump,
+    .present #rules,
+    .present #compliance .section-head,
+    .present .fine { display: none; }
+
+    .present .top,
+    .present .section { display: contents; }
+
+    .present .slide {
+      grid-template-columns: minmax(0, 0.62fr) minmax(0, 1.38fr);
+      grid-template-areas:
+        "hero     versus"
+        "risks    risks"
+        "alt-head alt-head"
+        "alts     alts";
+      align-content: center;
+      gap: 1.1rem 2rem;
+    }
+
+    .present .top > div { grid-area: hero; align-self: center; }
+
+    .present h1 { font-size: 3.1rem; }
+
+    .present .versus-card { grid-area: versus; margin-right: 5.5rem; }
+
+    .present .versus { font-size: 0.9rem; }
+
+    .present .versus th,
+    .present .versus td { padding-top: 0.45rem; padding-bottom: 0.45rem; }
+
+    .present .versus tbody th { width: 7rem; }
+
+    .present .versus tbody td::before { top: 0.7rem; }
+
+    .present .section .card { padding: 1.1rem 1.25rem; }
+
+    .present .risk p { font-size: 0.9rem; }
+
+    .present #alternatives .card > p { display: none; }
+
+    /* Each alternative on one row: its name, then the $100 example. */
+    .present #alternatives .card {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 13rem);
+      align-items: center;
+      gap: 1.25rem;
+      padding-top: 0.85rem;
+      padding-bottom: 0.85rem;
+    }
+
+    .present #alternatives .card h3 { margin: 0; }
+
+    .present .mini {
+      margin: 0;
+      padding: 0 0 0 1.25rem;
+      border-left: 1px dashed rgba(124, 157, 255, 0.35);
+    }
+
+    .present .mini div:first-child { padding-top: 0; border-top: 0; }
+
+    .present #compliance .grid {
+      grid-area: risks;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .present #alternatives .section-head { grid-area: alt-head; margin-top: 0.25rem; }
+
+    .present #alternatives .section-head h2 { font-size: 1.5rem; }
+
+    .present #alternatives .section-head .note { max-width: none; margin-top: 0.25rem; font-size: 0.95rem; }
+
+    .present #alternatives .grid {
+      grid-area: alts;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    @media (max-width: 700px) {
+      .checker { padding: 1.1rem; }
+      .fields { grid-template-columns: 1fr; }
+      .rate { margin: 0.2rem 0 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/"><img src="/assets/sola-logo-reverse.svg" alt="Sola Payments"></a>
+  </header>
+
+  <main class="slide">
+    <div class="top">
+      <div>
+        <p class="mark">Surcharging</p>
+        <h1>Know the rules. Then let Sola keep them.</h1>
+        <p class="lede">A surcharge is a percentage added to a credit card sale to cover what the merchant pays to accept cards. Card brands and states decide when it's allowed and how much. Here's what they require, what it costs to get it wrong, and what to offer where surcharging isn't an option.</p>
+        <nav class="jump" aria-label="On this page">
+          <a class="button button--ghost" href="#rules">The rules</a>
+          <a class="button button--ghost" href="#compliance">Why compliant</a>
+          <a class="button button--ghost" href="#alternatives">Alternatives</a>
+        </nav>
+      </div>
+
+      <form class="card checker" aria-labelledby="checker-title" novalidate>
+        <div class="checker-head">
+          <h2 id="checker-title">Check eligibility</h2>
+          <button class="reset" type="reset">Start over</button>
+        </div>
+
+        <div class="fields">
+          <div class="field">
+            <label for="state">Business location</label>
+            <select id="state" name="state">
+              <option value="">Choose a state</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="processor">Processor</label>
+            <select id="processor" name="processor">
+              <option value="">Choose a processor</option>
+            </select>
+          </div>
+
+          <fieldset class="field wide">
+            <legend>Pricing</legend>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="pricing" value="flat"><span>Flat rate</span></label>
+              <label class="chip"><input type="radio" name="pricing" value="interchange"><span>Interchange plus</span></label>
+              <label class="chip"><input type="radio" name="pricing" value="tiered"><span>Tiered</span></label>
+              <label class="rate" hidden>at <input type="number" name="rate" min="0.01" max="10" step="0.01" inputmode="decimal" placeholder="2.95" aria-label="Flat rate, in percent"> %</label>
+            </div>
+          </fieldset>
+
+          <fieldset class="field wide">
+            <legend>American Express</legend>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="amex" value="none"><span>Don't take Amex</span></label>
+              <label class="chip"><input type="radio" name="amex" value="optblue"><span>OptBlue</span></label>
+              <label class="chip"><input type="radio" name="amex" value="direct"><span>Amex Direct (ESA or PIP)</span></label>
+            </div>
+          </fieldset>
+
+          <fieldset class="field wide">
+            <legend>Convenience or service fee on the account</legend>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="fee" value="no"><span>No</span></label>
+              <label class="chip"><input type="radio" name="fee" value="yes"><span>Yes</span></label>
+            </div>
+          </fieldset>
+        </div>
+
+        <div class="result" aria-live="polite"></div>
+      </form>
+    </div>
+
+    <section class="section" id="rules" aria-labelledby="rules-title">
+      <div class="section-head">
+        <h2 id="rules-title">The rules</h2>
+        <p class="note">Card brands set the baseline. States can lower the cap or ban surcharging outright. Here's each rule, and what Sola does about it.</p>
+      </div>
+
+      <div class="grid grid--3 stagger" style="--stagger-start: 0.7s;">
+        <section class="card">
+          <h3>What counts as a surcharge</h3>
+          <ul class="checks">
+            <li><strong>A percentage</strong> of the sale, never a flat fee</li>
+            <li><strong>Only on the sale:</strong> not tax or tip</li>
+            <li><strong>Brand neutral:</strong> the same rate on every card brand</li>
+          </ul>
+          <p class="handled"><strong>Sola:</strong> if a merchant's rates differ by brand, the lowest one sets the surcharge for all of them.</p>
+        </section>
+
+        <section class="card">
+          <h3>Which cards</h3>
+          <ul class="checks">
+            <li><strong>Credit cards</strong> only</li>
+            <li class="is-no"><strong>Not debit,</strong> even when it's run as credit</li>
+            <li class="is-no"><strong>Not prepaid or gift cards</strong></li>
+          </ul>
+          <p class="handled"><strong>Sola:</strong> reads every card's BIN and leaves the fee off debit and prepaid. The sale still goes through.</p>
+        </section>
+
+        <section class="card">
+          <h3>How much</h3>
+          <ul class="checks">
+            <li><strong>Up to 3%</strong> under card brand rules</li>
+            <li><strong>Less where a state caps it:</strong> 2% in Colorado</li>
+            <li><strong>Never more</strong> than the merchant pays to accept the card</li>
+          </ul>
+          <p class="handled"><strong>Sola:</strong> caps the rate at enrollment at the lowest of the three, so it can't be set too high.</p>
+        </section>
+
+        <section class="card">
+          <h3>Where</h3>
+          <ul class="checks">
+            <li><strong>Card present:</strong> the merchant's state decides</li>
+            <li><strong>Card not present:</strong> the cardholder's billing state decides</li>
+            <li class="is-no"><strong>Not permitted</strong> in CA, CT, MA, ME, and Puerto Rico</li>
+          </ul>
+          <p class="handled"><strong>Sola:</strong> checks the merchant's state at enrollment and the cardholder's billing state on every online sale.</p>
+        </section>
+
+        <section class="card">
+          <h3>Disclosure</h3>
+          <ul class="checks">
+            <li><strong>Signs</strong> at the entrance and the point of sale</li>
+            <li><strong>On screen</strong> before the customer pays</li>
+            <li><strong>Its own line</strong> on the receipt</li>
+          </ul>
+          <p class="handled"><strong>Sola:</strong> Sola Terminal shows the fee before payment and prints it on its own line. Signs are up to the merchant.</p>
+        </section>
+
+        <section class="card">
+          <h3>Refunds</h3>
+          <ul class="checks">
+            <li><strong>Full refund:</strong> the surcharge goes back too</li>
+            <li><strong>Partial refund:</strong> a matching share of it goes back</li>
+          </ul>
+          <p class="handled"><strong>Sola:</strong> refunds the surcharge with the sale, in proportion on a partial refund.</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="section" id="compliance" aria-labelledby="compliance-title">
+      <div class="section-head">
+        <h2 id="compliance-title">A fee at the register isn't a surcharge program.</h2>
+        <p class="note">Plenty of merchants add a card fee on their own, or through a "cash discount" that charges cards extra at the terminal. It works until someone checks.</p>
+      </div>
+
+      <div class="card versus-card">
+        <table class="versus">
+          <thead>
+            <tr>
+              <td></td>
+              <th scope="col">A fee added at the register</th>
+              <th scope="col" class="good">Sola Surcharging</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Cards</th>
+              <td><span class="who">At the register</span>Every card, debit and prepaid too</td>
+              <td class="good"><span class="who">Sola Surcharging</span>Credit only, checked by BIN</td>
+            </tr>
+            <tr>
+              <th scope="row">Rate</th>
+              <td><span class="who">At the register</span>Whatever was set, even over the cap</td>
+              <td class="good"><span class="who">Sola Surcharging</span>Within 3%, the state cap, and their rate</td>
+            </tr>
+            <tr>
+              <th scope="row">States</th>
+              <td><span class="who">At the register</span>Charged even where it's banned</td>
+              <td class="good"><span class="who">Sola Surcharging</span>Checked by merchant and cardholder state</td>
+            </tr>
+            <tr>
+              <th scope="row">Disclosure</th>
+              <td><span class="who">At the register</span>Folded into the total, or not shown</td>
+              <td class="good"><span class="who">Sola Surcharging</span>On screen first, then its own receipt line</td>
+            </tr>
+            <tr>
+              <th scope="row">Refunds</th>
+              <td><span class="who">At the register</span>The fee stays with the merchant</td>
+              <td class="good"><span class="who">Sola Surcharging</span>Refunded with the sale</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid stagger" style="--stagger-start: 0.9s;">
+        <section class="card risk">
+          <h3>Secret shoppers</h3>
+          <p>Card brands run mystery shopper checks on signs, rates, and receipts. Any sale could be the test.</p>
+        </section>
+        <section class="card risk">
+          <h3>Fines</h3>
+          <p>Fines go through the processor to the merchant, and they climb until the problem is fixed.</p>
+        </section>
+        <section class="card risk">
+          <h3>Processing shut down</h3>
+          <p>A merchant who keeps surcharging the wrong way can lose the ability to accept cards at all.</p>
+        </section>
+        <section class="card risk">
+          <h3>Disputes and lawsuits</h3>
+          <p>Customers dispute fees they shouldn't have paid, and states and class actions go after improper card fees.</p>
+        </section>
+      </div>
+    </section>
+
+    <section class="section" id="alternatives" aria-labelledby="alternatives-title">
+      <div class="section-head">
+        <h2 id="alternatives-title">Can't surcharge? Other ways to cover the cost.</h2>
+        <p class="note">Merchants in California, Connecticut, Massachusetts, Maine, and Puerto Rico can't surcharge. They can still stop absorbing the cost of cards.</p>
+      </div>
+
+      <div class="grid grid--3 stagger" style="--stagger-start: 1s;">
+        <section class="card">
+          <h3>Cash discount</h3>
+          <p>The posted price is the card price. Customers who pay cash get a discount at the register. A discount for cash isn't a fee on cards.</p>
+          <dl class="mini">
+            <div><dt>Posted price</dt><dd>$100.00</dd></div>
+            <div><dt>Paid in cash</dt><dd>$97.00</dd></div>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h3>Dual pricing</h3>
+          <p>Every item shows two prices, cash and card, so the customer sees both before choosing how to pay.</p>
+          <dl class="mini">
+            <div><dt>Cash price</dt><dd>$100.00</dd></div>
+            <div><dt>Card price</dt><dd>$103.00</dd></div>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h3>Build it into prices</h3>
+          <p>Raise prices just enough to cover processing and charge everyone the same. Nothing extra to disclose or calculate.</p>
+          <dl class="mini">
+            <div><dt>Was</dt><dd>$100.00</dd></div>
+            <div><dt>Now, for everyone</dt><dd>$103.00</dd></div>
+          </dl>
+        </section>
+      </div>
+
+      <p class="note fine">A "cash discount" that adds a fee to card sales at the terminal is a surcharge, and the rules above apply to it. State pricing and display laws vary, so merchants should check theirs before switching.</p>
+    </section>
+  </main>
+
+  <nav class="page-nav" aria-label="Pages"></nav>
+
+  <script>
+    const CAP = SOLA_SURCHARGE_CAP;
+    const STATE_CAPS = SOLA_SURCHARGE_STATE_CAPS;
+    const BLOCKED = SOLA_SURCHARGE_BLOCKED;
+    const STATE_NAMES = SOLA_STATE_NAMES;
+    const PROCESSORS = SOLA_SURCHARGE_PROCESSORS;
+
+    const form = document.querySelector('.checker');
+    const result = form.querySelector('.result');
+    const rateLabel = form.querySelector('.rate');
+    const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+    const percent = n => `${Number(n.toFixed(2))}%`;
+    const listOf = (items, last = 'or') => items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')}${items.length > 2 ? ',' : ''} ${last} ${items.at(-1)}`;
+
+    Object.entries(STATE_NAMES)
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .forEach(([code, name]) => form.state.add(new Option(name, code)));
+    PROCESSORS.forEach(name => form.processor.add(new Option(name, name)));
+    form.processor.add(new Option('Another processor', 'other'));
+
+    const BLOCKED_NAMES = listOf(BLOCKED.map(code => STATE_NAMES[code]));
+
+    // Every answer the merchant needs, in the order they're asked.
+    function answers() {
+      const rate = parseFloat(form.rate.value);
+      return {
+        state: form.state.value,
+        processor: form.processor.value,
+        pricing: form.pricing.value,
+        rate: rate > 0 ? rate : null,
+        amex: form.amex.value,
+        fee: form.fee.value,
+      };
+    }
+
+    function evaluate(a) {
+      if (BLOCKED.includes(a.state)) return { kind: 'no' };
+
+      const fixes = [];
+      if (a.processor === 'other') fixes.push(`<strong>Move to a supported processor:</strong> ${listOf(PROCESSORS)}.`);
+      if (a.pricing && a.pricing !== 'flat') fixes.push("<strong>Move to flat rate pricing.</strong> Interchange plus and tiered pricing can't be surcharged.");
+      if (a.amex === 'direct') fixes.push("<strong>Move Amex to OptBlue.</strong> Amex Direct doesn't support surcharging.");
+      if (a.fee === 'yes') fixes.push("<strong>Remove the convenience fee.</strong> A sale can't carry both.");
+
+      const asked = [a.state, a.processor, a.pricing, a.amex, a.fee];
+      if (a.pricing === 'flat') asked.push(a.rate);
+      const left = asked.filter(answer => !answer).length;
+      if (left === asked.length) return { kind: 'empty' };
+      if (left) return { kind: 'pending', left, fixes };
+      if (fixes.length) return { kind: 'fix', fixes };
+
+      const stateCap = STATE_CAPS[a.state];
+      const max = Math.min(CAP, stateCap || CAP, a.rate);
+      const limits = [`the ${CAP}% card brand cap`];
+      if (stateCap) limits.push(`${STATE_NAMES[a.state]}'s ${stateCap}% cap`);
+      limits.push(`their ${percent(a.rate)} flat rate`);
+      return { kind: 'yes', max, limits };
+    }
+
+    const NEXT_STEP = '<p class="result-next">New account? Turn on <strong>Enable Surcharge</strong> on the application in the Partner Portal. Existing merchant? Sola support turns it on.</p>';
+
+    let shownKind;
+    function update() {
+      const a = answers();
+      rateLabel.hidden = a.pricing !== 'flat';
+      const r = evaluate(a);
+      const fixList = fixes => fixes.length ? `<ul class="checks">${fixes.map(f => `<li class="is-no">${f}</li>`).join('')}</ul>` : '';
+
+      if (r.kind === 'empty') {
+        result.innerHTML = '<p>Answer for the merchant to see whether they qualify. Nothing here is saved or sent.</p>';
+      } else if (r.kind === 'no') {
+        result.innerHTML = `
+          <p class="pill">Not available in ${STATE_NAMES[a.state]}</p>
+          <p>${STATE_NAMES[a.state]} doesn't permit credit card surcharging, so merchants there can't enroll. They can still cover the cost of cards with a cash discount, dual pricing, or their prices.</p>
+          <a class="button" href="#alternatives">See the alternatives</a>`;
+      } else if (r.kind === 'pending') {
+        result.innerHTML = `
+          <p class="pill">${r.left} more to answer</p>
+          ${r.fixes.length ? '<p>So far, they would need to:</p>' : '<p>Nothing standing in the way so far.</p>'}
+          ${fixList(r.fixes)}`;
+      } else if (r.kind === 'fix') {
+        const count = r.fixes.length;
+        result.innerHTML = `
+          <p class="pill">Eligible after ${count === 1 ? 'one change' : `${count} changes`}</p>
+          ${fixList(r.fixes)}
+          ${NEXT_STEP}`;
+      } else {
+        const amexNote = a.amex === 'optblue' ? ' Their Amex pricing has to be flat rate too.' : '';
+        result.innerHTML = `
+          <p class="pill">Eligible</p>
+          <p class="result-rate"><strong>Up to ${percent(r.max)}</strong> on credit card sales</p>
+          <p>The lowest of ${listOf(r.limits, 'and')}. On a $100 credit sale, that's ${money.format(r.max)}.${amexNote}</p>
+          <p>Online sales to cardholders billed in ${BLOCKED_NAMES} go through without the fee.</p>
+          ${NEXT_STEP}`;
+      }
+
+      result.dataset.kind = r.kind;
+      if (r.kind !== shownKind) {
+        result.classList.remove('stamp');
+        void result.offsetWidth;
+        result.classList.add('stamp');
+        shownKind = r.kind;
+      }
+    }
+
+    form.addEventListener('input', update);
+    form.addEventListener('change', update);
+    form.addEventListener('submit', e => e.preventDefault());
+    form.addEventListener('reset', () => setTimeout(update));
+    update();
+  </script>
+</body>
+</html>

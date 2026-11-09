@@ -10,6 +10,7 @@ const SOLA_PAGES = [
   { path: '/checkout/', title: 'Sola Checkout', ring: { x: 4, y: 98, size: 56 } },
   { path: '/collect/', title: 'Sola Collect', ring: { x: 94, y: 14, size: 46 } },
   { path: '/surcharging/', title: 'Surcharging', ring: { x: 102, y: 58, size: 72 } },
+  { path: '/surcharging/rules/', title: 'Surcharging rules', ring: { x: 104, y: 96, size: 60 } },
   { path: '/chargebacks/', title: 'Chargeback Management', ring: { x: 6, y: 104, size: 50 } },
   { path: '/whats-next/', title: "What's next", ring: { x: 50, y: 116, size: 96 }, qr: { src: '/assets/qr-whats-next.svg', caption: 'Scan to vote' } },
 ];
