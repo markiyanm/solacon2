@@ -587,7 +587,6 @@
       <section class="card stats" aria-labelledby="gains-title">
         <div class="gains-head">
           <h2 id="gains-title">Faster, and winning more</h2>
-          <span class="badge badge--outline" data-sample hidden>Sample figures</span>
         </div>
         <p class="gains-key"><span class="was"><i></i><span data-was></span></span><span class="now"><i></i><span data-now></span></span></p>
         <dl class="gains"></dl>
@@ -710,9 +709,8 @@
     pickMonth(MONTHS.findIndex(m => m.best));
 
     // Before and now, from the Chargeback Management dashboard: April 1 to May 1 against the
-    // 30 days to Nov 3, 2026. Set sample to true to mark the figures as placeholders.
+    // 30 days to Nov 3, 2026.
     const GAINS = {
-      sample: false,
       was: 'April',
       now: 'Last 30 days',
       rows: [
@@ -743,7 +741,6 @@
     }).join('');
     document.querySelector('[data-was]').textContent = GAINS.was;
     document.querySelector('[data-now]').textContent = GAINS.now;
-    document.querySelector('[data-sample]').hidden = !GAINS.sample;
   </script>
 </body>
 </html>

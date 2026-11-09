@@ -80,30 +80,35 @@
 
     .kiosk .kiosk-pill { display: inline-block; }
 
-    /* The ideas and the ballot side by side. The ballot column opens on the right on a
-       wide screen as soon as the first idea is picked; on a phone it slides in over the
-       page when the agent taps Next. */
+    /* The ideas and the ballot side by side. On a wide screen the ballot slides out from
+       the right edge, top to bottom of the window, as soon as the first idea is picked, and
+       the page moves over to make room; on a phone it slides in over the page when the
+       agent taps Next. */
     .vote {
       display: grid;
       gap: 2rem;
       align-items: start;
-      transition: grid-template-columns 0.45s var(--ease-out);
     }
 
     .ideas-col { min-width: 0; }
 
     @media (min-width: 900px) {
-      .vote.open { grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem); }
+      body { transition: padding-right 0.45s var(--ease-out); }
+      html:not(.present) body:has(.vote.open) { padding-right: calc(min(23rem, 40vw) + 1.25rem); }
       .vote.open .ideas { grid-template-columns: repeat(2, 1fr); }
     }
 
     .panel {
-      position: sticky;
+      position: fixed;
       top: 1.25rem;
-      max-height: calc(100vh - 2.5rem);
-      max-height: calc(100dvh - 2.5rem);
+      right: 1.25rem;
+      bottom: 1.25rem;
+      z-index: 6;
+      width: min(23rem, 40vw);
       overflow: auto;
       overscroll-behavior: contain;
+      /* The page has its own scrollbar; a second one beside it is just noise. */
+      scrollbar-width: none;
       padding: 1.5rem;
       background: rgba(10, 18, 56, 0.9);
       -webkit-backdrop-filter: blur(16px) saturate(140%);
@@ -113,12 +118,14 @@
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1rem 2.5rem rgba(1, 6, 35, 0.5);
     }
 
+    .panel::-webkit-scrollbar { display: none; }
+
     .vote:not(.open) .panel { display: none; }
 
     .vote.open .panel { animation: panel-in 0.45s var(--ease-out); }
 
     @keyframes panel-in {
-      from { opacity: 0; translate: 1.5rem 0; }
+      from { translate: calc(100% + 1.25rem) 0; }
     }
 
     .panel form,
@@ -150,10 +157,8 @@
 
     @media (max-width: 899px) {
       .panel {
-        position: fixed;
         inset: 0;
-        z-index: 6;
-        max-height: none;
+        width: auto;
         padding: 1.25rem var(--gutter) calc(2rem + env(safe-area-inset-bottom));
         border: 0;
         border-radius: 0;
@@ -719,17 +724,11 @@
           <p class="panel-note" aria-live="polite"></p>
 
           <div class="questions">
-            <h3 data-why-title></h3>
+            <h3>Help us build it right</h3>
 
             <label class="field" data-if="other">
               <span>Your idea: what should we build?</span>
               <textarea name="text" rows="3" maxlength="300" placeholder="What do your merchants keep asking for?"></textarea>
-            </label>
-
-            <label class="field">
-              <span><span data-why></span> <span class="optional">(optional)</span></span>
-              <textarea name="why" rows="2" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
-              <small>Leave out account numbers and card details.</small>
             </label>
 
             <fieldset>
@@ -760,6 +759,12 @@
                 <input name="kindsOther" maxlength="80" placeholder="Salons, contractors, schools…">
               </label>
             </fieldset>
+
+            <label class="field">
+              <span><span data-why></span> <span class="optional">(optional)</span></span>
+              <textarea name="why" rows="2" maxlength="600" placeholder="What are your merchants asking for?"></textarea>
+              <small>Leave out account numbers and card details.</small>
+            </label>
 
             <fieldset data-if="checkout-templates">
               <legend>Which industries need a Checkout template? <span class="optional">(optional)</span></legend>
@@ -958,7 +963,6 @@
       form.querySelector('[data-pilot-chips]').innerHTML = picks.map(id => `
         <label><input type="checkbox" name="pilots" value="${id}"${pilots.has(id) ? ' checked' : ''}><span>${short(id)}</span></label>`).join('');
       form.querySelectorAll('[data-if]').forEach(el => { el.hidden = !picks.includes(el.dataset.if); });
-      form.querySelector('[data-why-title]').textContent = picks.length > 1 ? 'Why these products?' : 'Why this product?';
       form.querySelector('[data-why]').textContent =
         !picks.length ? 'Why your #1?' :
         picks[0] === 'other' ? 'Why is your idea your #1?' : `Why is ${title(picks[0])} your #1?`;
@@ -967,8 +971,9 @@
       form.querySelector('[data-remove]').hidden = !ballot;
     }
 
+    // With nothing picked there's nothing to rank, so the ballot stays out of the way.
     function layout() {
-      const open = wide.matches ? Boolean(picks.length || ballot) : panelOpen;
+      const open = picks.length > 0 && (wide.matches || panelOpen);
       vote.classList.toggle('open', open);
       // On a phone the ballot covers the page, so the page stops scrolling underneath it.
       document.body.style.overflow = open && !wide.matches ? 'hidden' : '';
@@ -1070,7 +1075,7 @@
 
     // On a phone: the tray's Next opens the ballot over the page; Back closes it.
     function openPanel() {
-      if (!picks.length && !ballot) return note('Pick at least one idea first.', true);
+      if (!picks.length) return note('Pick at least one idea first.', true);
       panelOpen = true;
       paint();
       panel.scrollTop = 0;
