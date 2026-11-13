@@ -11,6 +11,7 @@ const SOLA_PAGES = [
   { path: '/collect/', title: 'Sola Collect', ring: { x: 94, y: 14, size: 46 } },
   { path: '/surcharging/', title: 'Surcharging', ring: { x: 102, y: 58, size: 72 } },
   { path: '/chargebacks/', title: 'Chargeback Management', ring: { x: 6, y: 104, size: 50 } },
+  { path: '/chargebacks/results/', title: 'Chargeback results', ring: { x: 103, y: 102, size: 54 } },
   { path: '/whats-next/', title: "What's next", ring: { x: 50, y: 116, size: 96 }, qr: { src: '/assets/qr-whats-next.svg', caption: 'Scan to vote' } },
 ];
 
