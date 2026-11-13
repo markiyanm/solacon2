@@ -9,6 +9,7 @@
   <link rel="icon" href="/assets/sola-logo-reverse.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/assets/site.css">
   <script src="/assets/site.js"></script>
+  <script src="/assets/surcharge.js"></script>
   <style>
     :root {
       /* "Not permitted" only: the one warm color on the page. */
@@ -358,6 +359,9 @@
     .present .ruling { gap: 0.8rem; margin-right: 5.5rem; }
 
     .present .map { flex-basis: 16rem; }
+
+    /* The booth version of the rules page has no form to check with. */
+    .present .rules .button { display: none; }
   </style>
 </head>
 <body>
@@ -458,6 +462,7 @@
           <li><strong>No convenience or service fee</strong> on the account</li>
         </ul>
         <p class="note start">New account? Turn on <strong>Enable Surcharge</strong> on the application in the Partner Portal.</p>
+        <a class="button" href="/surcharging/rules/">Check eligibility</a>
       </section>
     </div>
   </main>
@@ -465,25 +470,13 @@
   <nav class="page-nav" aria-label="Pages"></nav>
 
   <script>
-    // Rules from Sola's fee rules service (product docs: Surcharge, "Limits").
-    // Card present follows the merchant's state; card not present follows the cardholder's billing state.
-    const BRAND_CAP = 3;
-    const STATE_CAPS = { CO: 2 };
-    const BLOCKED = ['CA', 'CT', 'MA', 'ME', 'PR'];
+    // Rules from Sola's fee rules service (see assets/surcharge.js).
+    const BRAND_CAP = SOLA_SURCHARGE_CAP;
+    const STATE_CAPS = SOLA_SURCHARGE_STATE_CAPS;
+    const BLOCKED = SOLA_SURCHARGE_BLOCKED;
+    const STATE_NAMES = SOLA_STATE_NAMES;
     const MERCHANT_RATE = 3;
     const SALE = 100;
-
-    const STATE_NAMES = {
-      AL: 'Alabama', AK: 'Alaska', AZ: 'Arizona', AR: 'Arkansas', CA: 'California', CO: 'Colorado',
-      CT: 'Connecticut', DE: 'Delaware', DC: 'Washington, DC', FL: 'Florida', GA: 'Georgia', HI: 'Hawaii',
-      ID: 'Idaho', IL: 'Illinois', IN: 'Indiana', IA: 'Iowa', KS: 'Kansas', KY: 'Kentucky', LA: 'Louisiana',
-      ME: 'Maine', MD: 'Maryland', MA: 'Massachusetts', MI: 'Michigan', MN: 'Minnesota', MS: 'Mississippi',
-      MO: 'Missouri', MT: 'Montana', NE: 'Nebraska', NV: 'Nevada', NH: 'New Hampshire', NJ: 'New Jersey',
-      NM: 'New Mexico', NY: 'New York', NC: 'North Carolina', ND: 'North Dakota', OH: 'Ohio', OK: 'Oklahoma',
-      OR: 'Oregon', PA: 'Pennsylvania', PR: 'Puerto Rico', RI: 'Rhode Island', SC: 'South Carolina',
-      SD: 'South Dakota', TN: 'Tennessee', TX: 'Texas', UT: 'Utah', VT: 'Vermont', VA: 'Virginia',
-      WA: 'Washington', WV: 'West Virginia', WI: 'Wisconsin', WY: 'Wyoming',
-    };
 
     // The tile map, row by row: two letters per tile, two dots for an empty spot.
     const MAP = [
